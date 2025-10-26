@@ -11,13 +11,13 @@ export default function EducationSection() {
 
   // Slideshow data
   const mastersImages = [
-    '/Education/TUM/Slideshow/1533559592php3XzNsk.jpeg',
-    '/Education/TUM/Slideshow/1533559592phpn8Vt65.jpeg',
-    '/Education/TUM/Slideshow/1533559592phpsYF8Oy.jpeg',
-    '/Education/TUM/Slideshow/1533559592phpxHu6nD.jpeg',
-    '/Education/TUM/Slideshow/1533559593phpr35XFa.jpeg',
-    '/Education/TUM/Slideshow/6244f144-e799-4122-9ea5-6cf251ab69c4_TUM internet picture1_8e811d4e_750x400.jpg',
-    '/Education/TUM/Slideshow/Technical-University-of-Munich-–-TUM-campus-610x406.jpg',
+    '/Education/TUM/TUM (1).jpeg',
+    '/Education/TUM/TUM (1).jpg',
+    '/Education/TUM/TUM (2).jpeg',
+    '/Education/TUM/TUM (2).jpg',
+    '/Education/TUM/TUM (3).jpeg',
+    '/Education/TUM/TUM (4).jpeg',
+    '/Education/TUM/TUM (5).jpeg',
   ];
 
   const bachelorsImages = [
@@ -56,7 +56,7 @@ export default function EducationSection() {
     title: 'Master of Science',
     institution: 'Technical University of Munich (TUM)',
     degree: 'Aerospace Engineering',
-    period: 'October 2021 — Present',
+    period: 'October 2025 — Present',
     description: 'Pursuing advanced studies in aerospace engineering with specialization in computational fluid dynamics and aerodynamics. Engaging with cutting-edge research in turbulence modeling, high-performance computing, and numerical methods for complex flow simulations.',
     skills: [
       'Advanced CFD'

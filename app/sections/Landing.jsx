@@ -1,5 +1,5 @@
 export default function Landing() {
-  const SCALE = 0.75; // change this value as needed
+  const SCALE = 1; // change this value as needed
 
   return (
     <div className="split">
