@@ -1,6 +1,33 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+
 export default function Skills() {
+  const [scale, setScale] = useState(1)
+
+  // Reference: 2560x1440 @ 100% scale
+  const BASE_WIDTH = 2560
+  const BASE_HEIGHT = 1440
+
+  useEffect(() => {
+    const calculateScale = () => {
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+      
+      // Calculate scale based on viewport dimensions relative to base
+      const widthScale = viewportWidth / BASE_WIDTH
+      const heightScale = viewportHeight / BASE_HEIGHT
+      
+      // Use the smaller scale to prevent overflow
+      const newScale = Math.min(widthScale, heightScale)
+      setScale(newScale)
+    }
+
+    calculateScale()
+    window.addEventListener('resize', calculateScale)
+    return () => window.removeEventListener('resize', calculateScale)
+  }, [])
+
   const skillCategories = [
     {
       title: 'Design & CAD',
@@ -69,12 +96,40 @@ export default function Skills() {
   ]
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ 
+      maxWidth: `${1400 * scale}px`, 
+      margin: '0 auto', 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      transform: `scale(${scale})`,
+      transformOrigin: 'top center'
+    }}>
       {/* Header */}
-      <div style={{ flexShrink: 0, marginBottom: 'clamp(2rem, 4vh, 3rem)' }}>
-        <div className="kicker">Technical Expertise</div>
-        <h2 className="text-4xl md:text-5xl font-bold mb-4">Skills & Technologies</h2>
-        <p className="muted text-lg" style={{ maxWidth: '65ch' }}>
+      <div style={{ 
+        flexShrink: 0, 
+        marginBottom: `${48 * scale}px` 
+      }}>
+        <div className="kicker" style={{ fontSize: `${14 * scale}px`, marginBottom: `${12 * scale}px` }}>
+          Technical Expertise
+        </div>
+        <h2 style={{ 
+          fontSize: `${56 * scale}px`,
+          fontWeight: '700',
+          marginBottom: `${16 * scale}px`,
+          background: 'linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          lineHeight: '1.1'
+        }}>
+          Skills & Technologies
+        </h2>
+        <p className="muted" style={{ 
+          maxWidth: '65ch',
+          fontSize: `${18 * scale}px`,
+          lineHeight: '1.6'
+        }}>
           A comprehensive toolkit spanning computational engineering, data science, and modern web development — 
           built through years of hands-on research and industry projects.
         </p>
@@ -84,25 +139,25 @@ export default function Skills() {
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))',
-        gap: 'clamp(1.25rem, 2.5vw, 1.75rem)',
+        gap: `${28 * scale}px`,
         flex: 1,
         alignContent: 'start'
       }}>
         {skillCategories.map((category, idx) => (
           <div key={idx} className="card" style={{
-            padding: 'clamp(1.5rem, 3vw, 2rem)',
+            padding: `${32 * scale}px`,
             display: 'flex',
             flexDirection: 'column',
-            gap: 'clamp(1rem, 2vh, 1.5rem)',
+            gap: `${24 * scale}px`,
             position: 'relative',
             overflow: 'hidden'
           }}>
             {/* Header with Icon */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: `${16 * scale}px` }}>
               <div style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '12px',
+                width: `${48 * scale}px`,
+                height: `${48 * scale}px`,
+                borderRadius: `${12 * scale}px`,
                 background: 'linear-gradient(135deg, hsl(var(--accent) / 0.2), hsl(var(--accent) / 0.05))',
                 display: 'flex',
                 alignItems: 'center',
@@ -112,7 +167,7 @@ export default function Skills() {
                 {category.icon}
               </div>
               <h3 style={{
-                fontSize: 'clamp(1.15rem, 2.2vw, 1.35rem)',
+                fontSize: `${22 * scale}px`,
                 fontWeight: '600',
                 color: '#fff',
                 margin: 0,
@@ -126,15 +181,15 @@ export default function Skills() {
             <div style={{
               display: 'flex',
               flexWrap: 'wrap',
-              gap: 'clamp(0.5rem, 1vw, 0.65rem)'
+              gap: `${10 * scale}px`
             }}>
               {category.skills.map((skill, i) => (
                 <span
                   key={i}
                   style={{
-                    padding: 'clamp(0.4rem, 0.8vw, 0.5rem) clamp(0.75rem, 1.5vw, 0.95rem)',
-                    borderRadius: '8px',
-                    fontSize: 'clamp(0.8rem, 1.4vw, 0.875rem)',
+                    padding: `${8 * scale}px ${15 * scale}px`,
+                    borderRadius: `${8 * scale}px`,
+                    fontSize: `${14 * scale}px`,
                     fontWeight: '500',
                     background: 'rgba(255, 255, 255, 0.06)',
                     border: '1px solid rgba(255, 255, 255, 0.1)',

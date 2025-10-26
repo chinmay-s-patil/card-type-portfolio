@@ -5,6 +5,31 @@ import ProjectModal from '../components/ProjectModal'
 
 export default function Projects() {
   const [selectedProject, setSelectedProject] = useState(null)
+  const [scale, setScale] = useState(1)
+  const scrollContainerRef = useRef(null)
+
+  // Reference: 2560x1440 @ 100% scale
+  const BASE_WIDTH = 2560
+  const BASE_HEIGHT = 1080
+
+  useEffect(() => {
+    const calculateScale = () => {
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+      
+      // Calculate scale based on viewport dimensions relative to base
+      const widthScale = viewportWidth / BASE_WIDTH
+      const heightScale = viewportHeight / BASE_HEIGHT
+      
+      // Use the smaller scale to prevent overflow
+      const newScale = Math.min(widthScale, heightScale)
+      setScale(newScale)
+    }
+
+    calculateScale()
+    window.addEventListener('resize', calculateScale)
+    return () => window.removeEventListener('resize', calculateScale)
+  }, [])
 
   const projects = [
     {
@@ -405,12 +430,10 @@ export default function Projects() {
     }
   ]
 
-
   const PROJECTS_PER_PAGE = 6
   const totalPages = Math.ceil(projects.length / PROJECTS_PER_PAGE)
   
   const [currentPage, setCurrentPage] = useState(0)
-  const scrollContainerRef = useRef(null)
 
   // Scroll detection
   useEffect(() => {
@@ -456,28 +479,30 @@ export default function Projects() {
   return (
     <>
       <div style={{ 
-        maxWidth: 'min(90vw, 1400px)',
+        maxWidth: `${1400 * scale}px`,
         margin: '0 auto',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        padding: 'clamp(1rem, 2vw, 2rem)'
+        padding: `0 ${32 * scale}px`,
+        transform: `scale(${scale})`,
+        transformOrigin: 'top center'
       }}>
-        {/* Header - using fluid typography */}
+        {/* Header */}
         <div style={{ 
           flexShrink: 0, 
-          marginBottom: 'clamp(1.5rem, 3vh, 2.5rem)' 
+          marginBottom: `${40 * scale}px`
         }}>
           <div className="kicker" style={{
-            fontSize: 'clamp(0.75rem, 1.5vw, 0.9rem)',
-            marginBottom: 'clamp(0.5rem, 1vh, 1rem)'
+            fontSize: `${14 * scale}px`,
+            marginBottom: `${12 * scale}px`
           }}>
             Portfolio
           </div>
           <h2 style={{
-            fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+            fontSize: `${56 * scale}px`,
             fontWeight: '700',
-            marginBottom: 'clamp(0.75rem, 2vh, 1.25rem)',
+            marginBottom: `${20 * scale}px`,
             background: 'linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -488,9 +513,9 @@ export default function Projects() {
           </h2>
           <p className="muted" style={{ 
             maxWidth: '65ch',
-            fontSize: 'clamp(0.95rem, 2vw, 1.125rem)',
+            fontSize: `${18 * scale}px`,
             lineHeight: '1.6',
-            marginBottom: 'clamp(1rem, 2vh, 1.5rem)'
+            marginBottom: `${24 * scale}px`
           }}>
             A showcase of computational fluid dynamics simulations, visualization tools, 
             and web applications that demonstrate my technical capabilities and problem-solving approach.
@@ -502,16 +527,16 @@ export default function Projects() {
           display: 'flex', 
           justifyContent: 'center',
           alignItems: 'center',
-          gap: 'clamp(0.75rem, 2vw, 1.25rem)',
-          marginBottom: 'clamp(1.5rem, 3vh, 2.5rem)',
+          gap: `${20 * scale}px`,
+          marginBottom: `${40 * scale}px`,
           flexShrink: 0
         }}>
           <button
             onClick={goToPrevious}
             disabled={currentPage === 0}
             style={{
-              width: 'clamp(36px, 5vw, 44px)',
-              height: 'clamp(36px, 5vw, 44px)',
+              width: `${44 * scale}px`,
+              height: `${44 * scale}px`,
               borderRadius: '50%',
               background: currentPage === 0 
                 ? 'rgba(255, 255, 255, 0.05)' 
@@ -527,14 +552,14 @@ export default function Projects() {
             className="nav-button-hover"
             aria-label="Previous page"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
 
           <div style={{ 
             display: 'flex', 
-            gap: 'clamp(0.375rem, 1vw, 0.625rem)',
+            gap: `${10 * scale}px`,
             alignItems: 'center'
           }}>
             {Array.from({ length: totalPages }).map((_, idx) => (
@@ -542,9 +567,9 @@ export default function Projects() {
                 key={idx}
                 onClick={() => scrollToPage(idx)}
                 style={{
-                  width: idx === currentPage ? 'clamp(40px, 6vw, 52px)' : 'clamp(28px, 4vw, 36px)',
-                  height: 'clamp(5px, 0.8vh, 7px)',
-                  borderRadius: '4px',
+                  width: idx === currentPage ? `${52 * scale}px` : `${36 * scale}px`,
+                  height: `${7 * scale}px`,
+                  borderRadius: `${4 * scale}px`,
                   background: idx === currentPage 
                     ? 'hsl(var(--accent))' 
                     : 'rgba(255, 255, 255, 0.15)',
@@ -564,8 +589,8 @@ export default function Projects() {
             onClick={goToNext}
             disabled={currentPage === totalPages - 1}
             style={{
-              width: 'clamp(36px, 5vw, 44px)',
-              height: 'clamp(36px, 5vw, 44px)',
+              width: `${44 * scale}px`,
+              height: `${44 * scale}px`,
               borderRadius: '50%',
               background: currentPage === totalPages - 1 
                 ? 'rgba(255, 255, 255, 0.05)' 
@@ -581,7 +606,7 @@ export default function Projects() {
             className="nav-button-hover"
             aria-label="Next page"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
@@ -614,15 +639,15 @@ export default function Projects() {
                 scrollSnapStop: 'always',
                 display: 'flex',
                 alignItems: 'flex-start',
-                paddingTop: '20px'
+                paddingTop: `${20 * scale}px`
               }}
             >
               <div style={{ width: '100%' }}>
                 <div className="projects-grid" style={{
                   display: 'grid',
-                  gap: 'clamp(1rem, 2vw, 1.75rem)',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))',
-                  gridAutoRows: '1fr'
+                  gap: `${28 * scale}px`,
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gridTemplateRows: 'repeat(2, 1fr)'
                 }}>
                   {projects
                     .slice(pageIndex * PROJECTS_PER_PAGE, (pageIndex + 1) * PROJECTS_PER_PAGE)
