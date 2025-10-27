@@ -14,9 +14,13 @@ export default function DocumentViewer({ document, onClose }) {
   const isImage = !isPDF
 
   useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = 'unset'
+    if (typeof window !== 'undefined' && document.body) {
+      document.body.style.overflow = 'hidden'
+      return () => {
+        if (document.body) {
+          document.body.style.overflow = 'unset'
+        }
+      }
     }
   }, [])
 
