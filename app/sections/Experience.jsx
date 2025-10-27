@@ -296,12 +296,12 @@ export default function Experience() {
 
         <div className="main-grid" style={{ 
           display: 'grid',
-          gridTemplateColumns: '45% 55%',
-          gap: `${60 * scale}px`,
-          flex: 1,
-          overflow: 'hidden',
-          minHeight: 0
+          gridTemplateColumns: '48% 52%',
+          gap: `${32 * scale}px`,
+          alignItems: 'stretch',
+          height: `${690 * scale}px`
         }}>
+          {/* Left Side - Text Content */}
           <div ref={scrollContainerRef} className="exp-scroll" style={{ 
             overflowX: 'auto',
             overflowY: 'hidden',
@@ -317,8 +317,9 @@ export default function Experience() {
                 scrollSnapAlign: 'start',
                 scrollSnapStop: 'always',
                 display: 'flex',
-                alignItems: 'flex-start',
-                paddingRight: `${40 * scale}px`
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingRight: `${32 * scale}px`
               }} aria-hidden={idx !== activeIndex}>
                 <div className="exp-panel-inner" style={{ 
                   width: '100%',
@@ -527,75 +528,61 @@ export default function Experience() {
             ))}
           </div>
 
-          <div className="slideshow-column" style={{ 
+          {/* Right Side - Slideshow with Fade Effect */}
+          <div style={{
             position: 'relative',
             width: '100%',
             height: '100%',
-            display: 'flex',
-            alignItems: 'center'
+            minHeight: 'clamp(400px, 60vh, 600px)'
           }}>
-            <div className="fade-left" style={{ 
+            {/* Gradient Fade Overlay - Left to Right */}
+            <div style={{
               position: 'absolute',
               left: 0,
               top: 0,
               bottom: 0,
-              width: `${240 * scale}px`,
+              width: `${140 * scale}px`,
               background: 'linear-gradient(to right, rgba(10, 14, 26, 1) 0%, rgba(10, 14, 26, 0.8) 40%, rgba(10, 14, 26, 0) 100%)',
               zIndex: 2,
               pointerEvents: 'none'
             }} />
-            <div className="slideshow-container" style={{ 
-              position: 'relative',
-              width: '100%',
-              height: `${690 * scale}px`,
-              borderRadius: `${23 * scale}px`,
+
+            {/* Slideshow Container */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: `clamp(${12 * scale}px, 2vw, ${16 * scale}px)`,
               overflow: 'hidden',
-              boxShadow: `0 ${28 * scale}px ${83 * scale}px rgba(0,0,0,0.5)`,
-              border: '1px solid rgba(255,255,255,0.1)'
+              boxShadow: `0 ${20 * scale}px ${60 * scale}px rgba(0,0,0,0.5)`,
+              border: '1px solid rgba(255,255,255,0.1)',
+              backgroundColor: 'rgba(20, 20, 30, 0.5)'
             }}>
               {currentExperience?.images?.map((img, idx) => (
-                <div key={`${activeIndex}-${idx}`} className="slide" style={{ 
-                  position: 'absolute',
-                  inset: 0,
-                  opacity: idx === currentImageIndex ? 1 : 0,
-                  transition: 'opacity 1.2s ease-in-out',
-                  zIndex: idx === currentImageIndex ? 1 : 0
-                }}>
-                  <img 
-                    src={img} 
+                <div
+                  key={idx}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: idx === currentImageIndex ? 1 : 0,
+                    transition: 'opacity 1.2s ease-in-out',
+                    zIndex: idx === currentImageIndex ? 1 : 0
+                  }}
+                >
+                  <img
+                    src={img}
                     alt={`${currentExperience.company} - Image ${idx + 1}`}
-                    style={{ 
+                    style={{
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
                       display: 'block'
                     }}
                     onError={(e) => {
-                      console.error(`Failed to load: ${img}`)
+                      console.error(`Failed to load image: ${img}`)
                       e.target.style.display = 'none'
                     }}
                   />
                 </div>
-              ))}
-            </div>
-            <div className="indicators" style={{ 
-              position: 'absolute',
-              bottom: `${23 * scale}px`,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              display: 'flex',
-              gap: `${16 * scale}px`,
-              zIndex: 3
-            }}>
-              {currentExperience?.images?.map((_, idx) => (
-                <div key={idx} className="indicator" style={{ 
-                  width: idx === currentImageIndex ? `${82 * scale}px` : `${20 * scale}px`,
-                  height: `${12 * scale}px`,
-                  borderRadius: `${6 * scale}px`,
-                  background: idx === currentImageIndex ? currentExperience.color : 'rgba(255,255,255,0.3)',
-                  transition: 'all 0.3s ease',
-                  boxShadow: idx === currentImageIndex ? `0 0 ${16 * scale}px ${currentExperience.color}80` : 'none'
-                }} />
               ))}
             </div>
           </div>
