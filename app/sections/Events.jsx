@@ -2,11 +2,34 @@
 import { useState, useEffect } from 'react'
 
 export default function Events() {
-  const SCALE = 0.75
   const [selectedEvent, setSelectedEvent] = useState(null)
   const EVENTS_PER_PAGE = 3
   const [currentPage, setCurrentPage] = useState(0)
   const [slideshowIndices, setSlideshowIndices] = useState({})
+  const [scale, setScale] = useState(1)
+
+  // Reference: 2560x1440 @ 100% scale
+  const BASE_WIDTH = 2560
+  const BASE_HEIGHT = 1080
+
+  useEffect(() => {
+    const calculateScale = () => {
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+      
+      // Calculate scale based on viewport dimensions relative to base
+      const widthScale = viewportWidth / BASE_WIDTH
+      const heightScale = viewportHeight / BASE_HEIGHT
+      
+      // Use the smaller scale to prevent overflow
+      const newScale = Math.min(widthScale, heightScale)
+      setScale(newScale)
+    }
+
+    calculateScale()
+    window.addEventListener('resize', calculateScale)
+    return () => window.removeEventListener('resize', calculateScale)
+  }, [])
 
   const events = [
     {
@@ -159,11 +182,43 @@ export default function Events() {
 
   return (
     <>
-      <div style={{ maxWidth: '1300px', margin: '0 auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ transform: `scale(${SCALE})`, transformOrigin: 'center top', flexShrink: 0, marginBottom: '2rem' }}>
-          <div className="kicker">Conferences & Workshops</div>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">Events & Presentations</h2>
-          <p className="muted text-lg" style={{ maxWidth: '60ch' }}>
+      <div style={{ 
+        maxWidth: `${1300 * scale}px`, 
+        margin: '0 auto', 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        padding: `0 ${32 * scale}px`,
+        transform: `scale(${scale})`,
+        transformOrigin: 'top center'
+      }}>
+        <div style={{ 
+          flexShrink: 0, 
+          marginBottom: `${32 * scale}px` 
+        }}>
+          <div className="kicker" style={{ 
+            fontSize: `${14 * scale}px`,
+            marginBottom: `${12 * scale}px`
+          }}>
+            Conferences & Workshops
+          </div>
+          <h2 style={{ 
+            fontSize: `${56 * scale}px`,
+            fontWeight: '700',
+            marginBottom: `${16 * scale}px`,
+            background: 'linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            lineHeight: '1.1'
+          }}>
+            Events & Presentations
+          </h2>
+          <p className="muted" style={{ 
+            maxWidth: '60ch',
+            fontSize: `${18 * scale}px`,
+            lineHeight: '1.6'
+          }}>
             A visual journey through technical conferences, workshops, and speaking engagements.
           </p>
         </div>
@@ -173,9 +228,9 @@ export default function Events() {
           flex: 1,
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '2rem',
+          gap: `${32 * scale}px`,
           alignItems: 'start',
-          marginBottom: '2rem'
+          marginBottom: `${32 * scale}px`
         }}>
           {currentEvents.map((event) => (
             <div
@@ -191,28 +246,28 @@ export default function Events() {
               {/* Polaroid Frame */}
               <div style={{
                 background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
-                padding: '1rem',
-                paddingBottom: '4rem',
-                borderRadius: '8px',
-                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), 0 1px 8px rgba(0, 0, 0, 0.3)',
+                padding: `${16 * scale}px`,
+                paddingBottom: `${64 * scale}px`,
+                borderRadius: `${8 * scale}px`,
+                boxShadow: `0 ${10 * scale}px ${30 * scale}px rgba(0, 0, 0, 0.5), 0 ${1 * scale}px ${8 * scale}px rgba(0, 0, 0, 0.3)`,
                 position: 'relative',
                 overflow: 'hidden'
               }}>
                 {/* Year Badge */}
                 <div style={{
                   position: 'absolute',
-                  top: '1.5rem',
-                  left: '1.5rem',
-                  padding: '0.5rem 1rem',
+                  top: `${24 * scale}px`,
+                  left: `${24 * scale}px`,
+                  padding: `${8 * scale}px ${16 * scale}px`,
                   background: 'rgba(0, 0, 0, 0.8)',
                   backdropFilter: 'blur(8px)',
-                  borderRadius: '8px',
-                  fontSize: '1.25rem',
+                  borderRadius: `${8 * scale}px`,
+                  fontSize: `${20 * scale}px`,
                   fontWeight: '900',
                   color: event.color,
                   zIndex: 10,
                   border: `2px solid ${event.color}60`,
-                  boxShadow: `0 4px 12px ${event.color}30`
+                  boxShadow: `0 ${4 * scale}px ${12 * scale}px ${event.color}30`
                 }}>
                   {event.year}
                 </div>
@@ -220,12 +275,12 @@ export default function Events() {
                 {/* Photo Preview */}
                 <div style={{
                   width: '100%',
-                  height: '280px',
+                  height: `${280 * scale}px`,
                   background: `linear-gradient(135deg, ${event.color}20, ${event.color}05)`,
-                  borderRadius: '4px',
+                  borderRadius: `${4 * scale}px`,
                   overflow: 'hidden',
                   position: 'relative',
-                  marginBottom: '1rem'
+                  marginBottom: `${16 * scale}px`
                 }}>
                   <img
                     src={event.images[0]}
@@ -251,7 +306,7 @@ export default function Events() {
                     display: 'none',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '3rem',
+                    fontSize: `${48 * scale}px`,
                     fontWeight: '900',
                     color: event.color,
                     opacity: 0.15
@@ -262,13 +317,13 @@ export default function Events() {
                   {/* Type Badge */}
                   <div style={{
                     position: 'absolute',
-                    top: '1rem',
-                    right: '1rem',
-                    padding: '0.4rem 0.9rem',
+                    top: `${16 * scale}px`,
+                    right: `${16 * scale}px`,
+                    padding: `${6 * scale}px ${14 * scale}px`,
                     background: 'rgba(0, 0, 0, 0.75)',
                     backdropFilter: 'blur(8px)',
-                    borderRadius: '20px',
-                    fontSize: '0.75rem',
+                    borderRadius: `${20 * scale}px`,
+                    fontSize: `${12 * scale}px`,
                     fontWeight: '700',
                     color: event.color,
                     textTransform: 'uppercase',
@@ -281,26 +336,26 @@ export default function Events() {
                 {/* Caption Area */}
                 <div style={{
                   fontFamily: "'Caveat', cursive",
-                  fontSize: '1.2rem',
+                  fontSize: `${19 * scale}px`,
                   color: '#e0e0e0',
                   textAlign: 'center',
-                  marginBottom: '0.5rem',
+                  marginBottom: `${8 * scale}px`,
                   fontWeight: '600'
                 }}>
                   {event.title}
                 </div>
 
                 <div style={{
-                  fontSize: '0.85rem',
+                  fontSize: `${14 * scale}px`,
                   color: '#a0a0a0',
                   textAlign: 'center',
-                  marginBottom: '0.75rem',
+                  marginBottom: `${12 * scale}px`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '0.5rem'
+                  gap: `${8 * scale}px`
                 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg width={14 * scale} height={14 * scale} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" strokeWidth="2"/>
                     <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/>
                   </svg>
@@ -308,7 +363,7 @@ export default function Events() {
                 </div>
 
                 <div style={{
-                  fontSize: '0.8rem',
+                  fontSize: `${13 * scale}px`,
                   color: '#808080',
                   textAlign: 'center',
                   fontStyle: 'italic'
@@ -319,15 +374,15 @@ export default function Events() {
                 {/* Tape Effect */}
                 <div style={{
                   position: 'absolute',
-                  top: '-8px',
+                  top: `${-8 * scale}px`,
                   left: '50%',
                   transform: 'translateX(-50%) rotate(-2deg)',
-                  width: '80px',
-                  height: '20px',
+                  width: `${80 * scale}px`,
+                  height: `${20 * scale}px`,
                   background: 'rgba(255, 255, 255, 0.3)',
                   backdropFilter: 'blur(2px)',
                   border: '1px solid rgba(0, 0, 0, 0.05)',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                  boxShadow: `0 ${2 * scale}px ${4 * scale}px rgba(0, 0, 0, 0.1)`
                 }} />
               </div>
             </div>
@@ -339,15 +394,15 @@ export default function Events() {
           display: 'flex', 
           justifyContent: 'center',
           alignItems: 'center',
-          gap: '1rem',
+          gap: `${16 * scale}px`,
           flexShrink: 0
         }}>
           <button
             onClick={goToPrevious}
             disabled={currentPage === 0}
             style={{
-              width: '40px',
-              height: '40px',
+              width: `${40 * scale}px`,
+              height: `${40 * scale}px`,
               borderRadius: '50%',
               background: currentPage === 0 
                 ? 'rgba(255, 255, 255, 0.05)' 
@@ -362,14 +417,14 @@ export default function Events() {
             }}
             aria-label="Previous page"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
 
           <div style={{ 
             display: 'flex', 
-            gap: '0.5rem',
+            gap: `${8 * scale}px`,
             alignItems: 'center'
           }}>
             {Array.from({ length: totalPages }).map((_, idx) => (
@@ -377,9 +432,9 @@ export default function Events() {
                 key={idx}
                 onClick={() => setCurrentPage(idx)}
                 style={{
-                  width: idx === currentPage ? '48px' : '32px',
-                  height: '6px',
-                  borderRadius: '3px',
+                  width: idx === currentPage ? `${48 * scale}px` : `${32 * scale}px`,
+                  height: `${6 * scale}px`,
+                  borderRadius: `${3 * scale}px`,
                   background: idx === currentPage 
                     ? 'hsl(var(--accent))' 
                     : 'rgba(255, 255, 255, 0.15)',
@@ -387,7 +442,7 @@ export default function Events() {
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
                   boxShadow: idx === currentPage 
-                    ? '0 0 12px hsl(var(--accent) / 0.5)' 
+                    ? `0 0 ${12 * scale}px hsl(var(--accent) / 0.5)` 
                     : 'none'
                 }}
                 aria-label={`Go to page ${idx + 1}`}
@@ -399,8 +454,8 @@ export default function Events() {
             onClick={goToNext}
             disabled={currentPage === totalPages - 1}
             style={{
-              width: '40px',
-              height: '40px',
+              width: `${40 * scale}px`,
+              height: `${40 * scale}px`,
               borderRadius: '50%',
               background: currentPage === totalPages - 1 
                 ? 'rgba(255, 255, 255, 0.05)' 
@@ -415,7 +470,7 @@ export default function Events() {
             }}
             aria-label="Next page"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
@@ -432,7 +487,7 @@ export default function Events() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '2rem',
+            padding: `${32 * scale}px`,
             animation: 'fadeIn 0.3s ease'
           }}
           onClick={() => setSelectedEvent(null)}
@@ -450,13 +505,13 @@ export default function Events() {
             onClick={(e) => e.stopPropagation()}
             style={{
               position: 'relative',
-              maxWidth: '1400px',
+              maxWidth: `${1400 * scale}px`,
               width: '95%',
               maxHeight: '90vh',
               background: 'linear-gradient(135deg, rgba(15, 20, 32, 0.95), rgba(10, 14, 26, 0.95))',
-              borderRadius: '24px',
+              borderRadius: `${24 * scale}px`,
               border: '1px solid rgba(255, 255, 255, 0.1)',
-              boxShadow: '0 20px 80px rgba(0, 0, 0, 0.6)',
+              boxShadow: `0 ${20 * scale}px ${80 * scale}px rgba(0, 0, 0, 0.6)`,
               overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column',
@@ -468,10 +523,10 @@ export default function Events() {
               onClick={() => setSelectedEvent(null)}
               style={{
                 position: 'absolute',
-                top: '1.5rem',
-                right: '1.5rem',
-                width: '40px',
-                height: '40px',
+                top: `${24 * scale}px`,
+                right: `${24 * scale}px`,
+                width: `${40 * scale}px`,
+                height: `${40 * scale}px`,
                 borderRadius: '50%',
                 background: 'rgba(0, 0, 0, 0.6)',
                 backdropFilter: 'blur(8px)',
@@ -486,7 +541,7 @@ export default function Events() {
               className="hover:bg-[rgba(255,255,255,0.1)]"
               aria-label="Close modal"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M18 6L6 18M6 6L18 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
@@ -494,26 +549,26 @@ export default function Events() {
             {/* Content */}
             <div style={{ 
               overflowY: 'auto', 
-              padding: '2.5rem',
+              padding: `${40 * scale}px`,
               flex: 1
             }}>
               {/* Header */}
-              <div style={{ marginBottom: '2rem' }}>
+              <div style={{ marginBottom: `${32 * scale}px` }}>
                 <div style={{
-                  fontSize: '0.85rem',
+                  fontSize: `${14 * scale}px`,
                   color: selectedEvent.color,
                   fontWeight: '600',
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
-                  marginBottom: '0.75rem'
+                  marginBottom: `${12 * scale}px`
                 }}>
                   {selectedEvent.type}
                 </div>
                 
                 <h2 style={{
-                  fontSize: '2.5rem',
+                  fontSize: `${40 * scale}px`,
                   fontWeight: '700',
-                  marginBottom: '0.75rem',
+                  marginBottom: `${12 * scale}px`,
                   background: 'linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
@@ -524,19 +579,19 @@ export default function Events() {
 
                 <div style={{
                   display: 'flex',
-                  gap: '2rem',
+                  gap: `${32 * scale}px`,
                   flexWrap: 'wrap',
                   alignItems: 'center',
-                  marginTop: '1rem'
+                  marginTop: `${16 * scale}px`
                 }}>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem',
-                    fontSize: '0.95rem',
+                    gap: `${8 * scale}px`,
+                    fontSize: `${15 * scale}px`,
                     color: 'var(--muted)'
                   }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width={16 * scale} height={16 * scale} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" strokeWidth="2"/>
                       <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/>
                     </svg>
@@ -545,11 +600,11 @@ export default function Events() {
 
                   <div style={{
                     fontFamily: 'monospace',
-                    fontSize: '0.9rem',
+                    fontSize: `${14 * scale}px`,
                     color: selectedEvent.color,
-                    padding: '0.4rem 1rem',
+                    padding: `${6 * scale}px ${16 * scale}px`,
                     background: 'rgba(255, 255, 255, 0.05)',
-                    borderRadius: '8px',
+                    borderRadius: `${8 * scale}px`,
                     border: '1px solid rgba(255, 255, 255, 0.08)'
                   }}>
                     {selectedEvent.date}
@@ -561,9 +616,9 @@ export default function Events() {
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '1rem',
-                marginBottom: '2rem',
-                height: '400px'
+                gap: `${16 * scale}px`,
+                marginBottom: `${32 * scale}px`,
+                height: `${400 * scale}px`
               }}>
                 {(slideshowIndices[selectedEvent.id] || [0, 1, 2]).map((imgIndex, slotIndex) => (
                   <div
@@ -572,7 +627,7 @@ export default function Events() {
                       position: 'relative',
                       width: '100%',
                       height: '100%',
-                      borderRadius: '12px',
+                      borderRadius: `${12 * scale}px`,
                       overflow: 'hidden',
                       background: 'rgba(0, 0, 0, 0.4)',
                       border: '1px solid rgba(255, 255, 255, 0.1)'
@@ -595,17 +650,17 @@ export default function Events() {
               </div>
 
               {/* Description */}
-              <div style={{ marginBottom: '2rem' }}>
+              <div style={{ marginBottom: `${32 * scale}px` }}>
                 <h3 style={{
-                  fontSize: '1.25rem',
+                  fontSize: `${20 * scale}px`,
                   fontWeight: '600',
-                  marginBottom: '1rem',
+                  marginBottom: `${16 * scale}px`,
                   color: 'rgba(255, 255, 255, 0.95)'
                 }}>
                   Overview
                 </h3>
                 <p style={{
-                  fontSize: '1rem',
+                  fontSize: `${16 * scale}px`,
                   lineHeight: '1.8',
                   color: 'var(--muted)'
                 }}>
@@ -614,11 +669,11 @@ export default function Events() {
               </div>
 
               {/* Tags */}
-              <div style={{ marginBottom: '2rem' }}>
+              <div style={{ marginBottom: `${32 * scale}px` }}>
                 <h3 style={{
-                  fontSize: '1.25rem',
+                  fontSize: `${20 * scale}px`,
                   fontWeight: '600',
-                  marginBottom: '1rem',
+                  marginBottom: `${16 * scale}px`,
                   color: 'rgba(255, 255, 255, 0.95)'
                 }}>
                   Topics
@@ -626,15 +681,15 @@ export default function Events() {
                 <div style={{
                   display: 'flex',
                   flexWrap: 'wrap',
-                  gap: '0.75rem'
+                  gap: `${12 * scale}px`
                 }}>
                   {selectedEvent.tags.map((tag, i) => (
                     <span
                       key={i}
                       style={{
-                        padding: '0.5rem 1.25rem',
-                        borderRadius: '12px',
-                        fontSize: '0.9rem',
+                        padding: `${8 * scale}px ${20 * scale}px`,
+                        borderRadius: `${12 * scale}px`,
+                        fontSize: `${14 * scale}px`,
                         fontWeight: '600',
                         background: `${selectedEvent.color}15`,
                         border: `1px solid ${selectedEvent.color}40`,
