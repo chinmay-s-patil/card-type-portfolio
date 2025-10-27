@@ -8,7 +8,31 @@ export default function OpenFOAMSection() {
   const [selectedSim, setSelectedSim] = useState(null)
   const [activeFilter, setActiveFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(0)
+  const [scale, setScale] = useState(1)
   const scrollContainerRef = useRef(null)
+
+  // Reference: 2560x1440 @ 100% scale
+  const BASE_WIDTH = 2560
+  const BASE_HEIGHT = 1440
+
+  useEffect(() => {
+    const calculateScale = () => {
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+      
+      // Calculate scale based on viewport dimensions relative to base
+      const widthScale = viewportWidth / BASE_WIDTH
+      const heightScale = viewportHeight / BASE_HEIGHT
+      
+      // Use the smaller scale to prevent overflow
+      const newScale = Math.min(widthScale, heightScale)
+      setScale(newScale)
+    }
+
+    calculateScale()
+    window.addEventListener('resize', calculateScale)
+    return () => window.removeEventListener('resize', calculateScale)
+  }, [])
 
   const simulations = [
     {
@@ -283,32 +307,33 @@ export default function OpenFOAMSection() {
   return (
     <>
       <div style={{ 
-        maxWidth: '1600px',
+        maxWidth: `${1600 * scale}px`,
         margin: '0 auto',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        padding: 'clamp(1rem, 2vw, 2rem)'
+        padding: `0 ${32 * scale}px`,
+        transform: `scale(${scale})`,
+        transformOrigin: 'top center'
       }}>
         {/* Header */}
         <div style={{ 
           flexShrink: 0, 
-          marginBottom: 'clamp(1.5rem, 3vh, 2rem)' 
+          marginBottom: `${32 * scale}px` 
         }}>
           <div className="kicker" style={{
-            fontSize: 'clamp(0.75rem, 1.5vw, 0.9rem)',
-            marginBottom: 'clamp(0.5rem, 1vh, 0.75rem)',
-            color: 'rgba(255, 255, 255, 0.6)',
+            fontSize: `${14 * scale}px`,
+            marginBottom: `${12 * scale}px`,
             textTransform: 'uppercase',
             letterSpacing: '0.1em',
-            fontWeight: '600'
+            fontWeight: '900'
           }}>
             Computational Fluid Dynamics
           </div>
           <h2 style={{
-            fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+            fontSize: `${56 * scale}px`,
             fontWeight: '700',
-            marginBottom: 'clamp(0.75rem, 2vh, 1rem)',
+            marginBottom: `${16 * scale}px`,
             background: 'linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -319,7 +344,7 @@ export default function OpenFOAMSection() {
           </h2>
           <p style={{ 
             maxWidth: '65ch',
-            fontSize: 'clamp(0.95rem, 2vw, 1.125rem)',
+            fontSize: `${18 * scale}px`,
             lineHeight: '1.6',
             color: 'rgba(255, 255, 255, 0.7)'
           }}>
@@ -331,11 +356,11 @@ export default function OpenFOAMSection() {
         {/* Solver Filter Pills */}
         <div style={{
           display: 'flex',
-          gap: 'clamp(0.5rem, 1vw, 0.75rem)',
-          marginBottom: 'clamp(1.5rem, 3vh, 2rem)',
+          gap: `${12 * scale}px`,
+          marginBottom: `${32 * scale}px`,
           overflowX: 'auto',
           scrollbarWidth: 'thin',
-          paddingBottom: '0.5rem',
+          paddingBottom: `${8 * scale}px`,
           flexShrink: 0
         }}>
           {solvers.map((solver) => (
@@ -343,9 +368,9 @@ export default function OpenFOAMSection() {
               key={solver}
               onClick={() => setActiveFilter(solver)}
               style={{
-                padding: 'clamp(0.5rem, 1vw, 0.65rem) clamp(1rem, 2vw, 1.5rem)',
-                borderRadius: '10px',
-                fontSize: 'clamp(0.8rem, 1.5vw, 0.9rem)',
+                padding: `${10 * scale}px ${24 * scale}px`,
+                borderRadius: `${10 * scale}px`,
+                fontSize: `${14 * scale}px`,
                 fontWeight: '600',
                 background: activeFilter === solver
                   ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.25), rgba(59, 130, 246, 0.1))'
@@ -359,7 +384,7 @@ export default function OpenFOAMSection() {
                 cursor: 'pointer',
                 transition: 'all 0.25s ease',
                 boxShadow: activeFilter === solver
-                  ? '0 4px 16px rgba(59, 130, 246, 0.25)'
+                  ? `0 ${6 * scale}px ${24 * scale}px rgba(59, 130, 246, 0.25)`
                   : 'none',
                 whiteSpace: 'nowrap',
                 fontFamily: 'monospace'
@@ -376,16 +401,16 @@ export default function OpenFOAMSection() {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          gap: '1rem',
-          marginBottom: 'clamp(1rem, 2vh, 1.5rem)',
+          gap: `${16 * scale}px`,
+          marginBottom: `${32 * scale}px`,
           flexShrink: 0
         }}>
           <button
             onClick={scrollLeft}
             disabled={currentPage === 0}
             style={{
-              width: '44px',
-              height: '44px',
+              width: `${44 * scale}px`,
+              height: `${44 * scale}px`,
               borderRadius: '50%',
               background: currentPage === 0 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.1)',
               border: '1px solid rgba(255, 255, 255, 0.15)',
@@ -399,16 +424,16 @@ export default function OpenFOAMSection() {
             className="scroll-button"
             aria-label="Previous page"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="none">
               <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
 
           <div style={{
-            fontSize: '0.9rem',
+            fontSize: `${14 * scale}px`,
             fontWeight: '600',
             color: 'rgba(255, 255, 255, 0.7)',
-            minWidth: '80px',
+            minWidth: `${80 * scale}px`,
             textAlign: 'center'
           }}>
             {filteredSimulations.length > 0 ? `${currentPage + 1} / ${totalPages}` : '0 / 0'}
@@ -418,8 +443,8 @@ export default function OpenFOAMSection() {
             onClick={scrollRight}
             disabled={currentPage >= totalPages - 1}
             style={{
-              width: '44px',
-              height: '44px',
+              width: `${44 * scale}px`,
+              height: `${44 * scale}px`,
               borderRadius: '50%',
               background: currentPage >= totalPages - 1 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.1)',
               border: '1px solid rgba(255, 255, 255, 0.15)',
@@ -433,7 +458,7 @@ export default function OpenFOAMSection() {
             className="scroll-button"
             aria-label="Next page"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <svg width={20 * scale} height={20 * scale} viewBox="0 0 24 24" fill="none">
               <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
@@ -446,10 +471,10 @@ export default function OpenFOAMSection() {
             display: 'grid',
             gridAutoFlow: 'column',
             gridAutoColumns: 'calc(33.333% - 1.33rem)',
-            gap: 'clamp(1.5rem, 3vw, 2rem)',
+            gap: `${32 * scale}px`,
             overflowX: 'hidden',
             scrollbarWidth: 'none',
-            paddingBottom: '1rem',
+            paddingBottom: `${16 * scale}px`,
             flex: 1,
             alignItems: 'stretch'
           }}
@@ -461,7 +486,7 @@ export default function OpenFOAMSection() {
               onClick={() => setSelectedSim(sim)}
               style={{
                 position: 'relative',
-                borderRadius: '16px',
+                borderRadius: `${16 * scale}px`,
                 overflow: 'hidden',
                 cursor: 'pointer',
                 background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01))',
@@ -475,7 +500,7 @@ export default function OpenFOAMSection() {
               {/* Preview Area */}
               <div style={{
                 width: '100%',
-                height: '240px',
+                height: `${240 * scale}px`,
                 background: `linear-gradient(135deg, ${sim.color}15, rgba(0, 0, 0, 0.4))`,
                 position: 'relative',
                 overflow: 'hidden',
@@ -488,7 +513,7 @@ export default function OpenFOAMSection() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '2rem',
+                  fontSize: `${32 * scale}px`,
                   fontWeight: '900',
                   color: sim.color,
                   opacity: 0.2,
@@ -500,13 +525,13 @@ export default function OpenFOAMSection() {
                 {/* Solver Badge */}
                 <div style={{
                   position: 'absolute',
-                  top: '0.75rem',
-                  left: '0.75rem',
-                  padding: '0.35rem 0.75rem',
+                  top: `${12 * scale}px`,
+                  left: `${12 * scale}px`,
+                  padding: `${6 * scale}px ${12 * scale}px`,
                   background: 'rgba(0, 0, 0, 0.8)',
                   backdropFilter: 'blur(8px)',
-                  borderRadius: '6px',
-                  fontSize: '0.7rem',
+                  borderRadius: `${6 * scale}px`,
+                  fontSize: `${11 * scale}px`,
                   fontWeight: '700',
                   color: sim.color,
                   border: `1px solid ${sim.color}60`,
@@ -520,13 +545,13 @@ export default function OpenFOAMSection() {
                 {/* Year Badge */}
                 <div style={{
                   position: 'absolute',
-                  top: '0.75rem',
-                  right: '0.75rem',
-                  padding: '0.35rem 0.75rem',
+                  top: `${12 * scale}px`,
+                  right: `${12 * scale}px`,
+                  padding: `${6 * scale}px ${12 * scale}px`,
                   background: 'rgba(0, 0, 0, 0.8)',
                   backdropFilter: 'blur(8px)',
-                  borderRadius: '6px',
-                  fontSize: '0.75rem',
+                  borderRadius: `${6 * scale}px`,
+                  fontSize: `${12 * scale}px`,
                   fontWeight: '700',
                   color: '#fff'
                 }}>
@@ -536,13 +561,13 @@ export default function OpenFOAMSection() {
                 {/* Category Badge */}
                 <div style={{
                   position: 'absolute',
-                  bottom: '0.75rem',
-                  left: '0.75rem',
-                  padding: '0.35rem 0.75rem',
+                  bottom: `${12 * scale}px`,
+                  left: `${12 * scale}px`,
+                  padding: `${6 * scale}px ${12 * scale}px`,
                   background: 'rgba(0, 0, 0, 0.7)',
                   backdropFilter: 'blur(4px)',
-                  borderRadius: '6px',
-                  fontSize: '0.7rem',
+                  borderRadius: `${6 * scale}px`,
+                  fontSize: `${11 * scale}px`,
                   fontWeight: '600',
                   color: '#fff',
                   textTransform: 'uppercase',
@@ -554,16 +579,16 @@ export default function OpenFOAMSection() {
 
               {/* Content Area */}
               <div style={{ 
-                padding: 'clamp(1.25rem, 2.5vw, 1.5rem)',
+                padding: `${20 * scale}px ${24 * scale}px`,
                 flex: 1,
                 display: 'flex',
                 flexDirection: 'column'
               }}>
                 {/* Title */}
                 <h3 style={{
-                  fontSize: 'clamp(1.1rem, 2vw, 1.3rem)',
+                  fontSize: `${20 * scale}px`,
                   fontWeight: '700',
-                  marginBottom: '0.75rem',
+                  marginBottom: `${12 * scale}px`,
                   color: '#fff',
                   lineHeight: '1.2'
                 }}>
@@ -572,10 +597,10 @@ export default function OpenFOAMSection() {
 
                 {/* Description */}
                 <p style={{
-                  fontSize: '0.85rem',
+                  fontSize: `${14 * scale}px`,
                   lineHeight: '1.6',
                   color: 'rgba(255, 255, 255, 0.7)',
-                  marginBottom: '1rem',
+                  marginBottom: `${16 * scale}px`,
                   flex: 1,
                   display: '-webkit-box',
                   WebkitLineClamp: 3,
@@ -589,44 +614,44 @@ export default function OpenFOAMSection() {
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: '1fr 1fr',
-                  gap: '0.5rem',
-                  marginBottom: '1rem',
-                  padding: '0.75rem',
+                  gap: `${8 * scale}px`,
+                  marginBottom: `${16 * scale}px`,
+                  padding: `${12 * scale}px`,
                   background: 'rgba(0, 0, 0, 0.3)',
-                  borderRadius: '8px',
+                  borderRadius: `${8 * scale}px`,
                   border: '1px solid rgba(255, 255, 255, 0.05)'
                 }}>
                   <div>
                     <div style={{
-                      fontSize: '0.65rem',
+                      fontSize: `${10 * scale}px`,
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                       color: 'rgba(255, 255, 255, 0.5)',
-                      marginBottom: '0.15rem'
+                      marginBottom: `${4 * scale}px`
                     }}>
                       Mesh
                     </div>
                     <div style={{
-                      fontSize: '0.75rem',
+                      fontSize: `${12 * scale}px`,
                       fontWeight: '600',
                       color: sim.color,
                       fontFamily: 'monospace'
                     }}>
-                      {sim.specs.cells}
+                      {sim.specs.cells || 'N/A'}
                     </div>
                   </div>
                   <div>
                     <div style={{
-                      fontSize: '0.65rem',
+                      fontSize: `${10 * scale}px`,
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                       color: 'rgba(255, 255, 255, 0.5)',
-                      marginBottom: '0.15rem'
+                      marginBottom: `${4 * scale}px`
                     }}>
                       Model
                     </div>
                     <div style={{
-                      fontSize: '0.75rem',
+                      fontSize: `${12 * scale}px`,
                       fontWeight: '600',
                       color: sim.color,
                       fontFamily: 'monospace'
@@ -640,15 +665,15 @@ export default function OpenFOAMSection() {
                 <div style={{
                   display: 'flex',
                   flexWrap: 'wrap',
-                  gap: '0.4rem'
+                  gap: `${8 * scale}px`
                 }}>
                   {sim.tags.slice(0, 3).map((tag, i) => (
                     <span
                       key={i}
                       style={{
-                        padding: '0.3rem 0.65rem',
-                        borderRadius: '6px',
-                        fontSize: '0.7rem',
+                        padding: `${5 * scale}px ${10 * scale}px`,
+                        borderRadius: `${6 * scale}px`,
+                        fontSize: `${11 * scale}px`,
                         fontWeight: '500',
                         background: `${sim.color}15`,
                         color: sim.color,
@@ -664,10 +689,10 @@ export default function OpenFOAMSection() {
               {/* Hover Indicator */}
               <div style={{
                 position: 'absolute',
-                bottom: '1rem',
-                right: '1rem',
-                width: '32px',
-                height: '32px',
+                bottom: `${16 * scale}px`,
+                right: `${16 * scale}px`,
+                width: `${32 * scale}px`,
+                height: `${32 * scale}px`,
                 borderRadius: '50%',
                 background: 'rgba(255, 255, 255, 0.1)',
                 display: 'flex',
@@ -679,7 +704,7 @@ export default function OpenFOAMSection() {
               }}
               className="card-arrow"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <svg width={16 * scale} height={16 * scale} viewBox="0 0 24 24" fill="none">
                   <path d="M9 18L15 12L9 6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
