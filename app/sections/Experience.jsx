@@ -1,37 +1,32 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import DocumentViewer from '../components/DocumentViewer'
+
+// Mock DocumentViewer for demo
+const DocumentViewer = ({ document, onClose }) => (
+  <div style={{
+    position: 'fixed',
+    inset: 0,
+    zIndex: 100,
+    background: 'rgba(0,0,0,0.9)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  }} onClick={onClose}>
+    <div style={{ color: 'white', padding: '2rem' }}>
+      <h2>{document.name}</h2>
+      <p>Document viewer placeholder</p>
+    </div>
+  </div>
+)
 
 export default function Experience() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [scale, setScale] = useState(1)
   const [selectedDocument, setSelectedDocument] = useState(null)
   const scrollContainerRef = useRef(null)
 
-  // Reference: 2560x1440 @ 125% = effective 2048x1152
-  const BASE_WIDTH = 2560
-  const BASE_HEIGHT = 1440
-
-  useEffect(() => {
-    const calculateScale = () => {
-      const viewportWidth = window.innerWidth
-      const viewportHeight = window.innerHeight
-      
-      const widthScale = viewportWidth / BASE_WIDTH
-      const heightScale = viewportHeight / BASE_HEIGHT
-      
-      const newScale = Math.min(widthScale, heightScale)
-      setScale(newScale)
-    }
-
-    calculateScale()
-    window.addEventListener('resize', calculateScale)
-    return () => window.removeEventListener('resize', calculateScale)
-  }, [])
-
-  const experiences = [
+    const experiences = [
     {
       year: 'Jun 2025',
       role: 'Mechanical Research Engineer',
@@ -165,7 +160,6 @@ export default function Experience() {
 
   useEffect(() => {
     if (!currentExperience?.images?.length) return
-
     const timer = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % currentExperience.images.length)
     }, 4000)
@@ -203,51 +197,54 @@ export default function Experience() {
 
   return (
     <>
-      <section className="experience-section" style={{ 
+      <section style={{ 
         width: '100%',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        padding: `0 ${80 * scale}px`,
-        maxWidth: `${1800 * scale}px`,
-        margin: '0 auto',
-        transform: `scale(${scale})`,
-        transformOrigin: 'top center'
+        padding: '0 clamp(1rem, 5vw, 5rem)',
+        maxWidth: '1800px',
+        margin: '0 auto'
       }}>
-        <div className="intro" style={{ 
+        <div style={{ 
           flexShrink: 0, 
-          marginBottom: `${35 * scale}px`
+          marginBottom: 'clamp(1.5rem, 3vh, 2.5rem)'
         }}>
-          <div className="kicker" style={{ 
-            fontSize: `${16 * scale}px`,
-            marginBottom: `${12 * scale}px`
+          <div style={{ 
+            fontSize: 'clamp(0.75rem, 1vw, 1rem)',
+            marginBottom: '0.75rem',
+            color: 'hsl(140, 70%, 60%)',
+            fontWeight: '600',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase'
           }}>Career Journey</div>
           <h2 style={{ 
-            fontSize: `${58 * scale}px`,
+            fontSize: 'clamp(2rem, 4vw, 3.5rem)',
             fontWeight: '700',
-            marginBottom: `${17 * scale}px`,
+            marginBottom: '1rem',
             background: 'linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
             lineHeight: '1.1'
           }}>Professional Timeline</h2>
-          <p className="muted" style={{ 
+          <p style={{ 
             maxWidth: '65ch',
-            fontSize: `${21 * scale}px`,
+            fontSize: 'clamp(1rem, 1.5vw, 1.25rem)',
             lineHeight: '1.6',
-            marginBottom: `${23 * scale}px`
+            marginBottom: 'clamp(1rem, 2vh, 1.5rem)',
+            color: 'rgba(255, 255, 255, 0.68)'
           }}>Navigate through my career journey — from cutting-edge research to industry applications and creative web development.</p>
         </div>
 
-        <div className="tabs-wrapper" style={{ 
+        <div style={{ 
           position: 'relative',
-          marginBottom: `${35 * scale}px`,
+          marginBottom: 'clamp(1.5rem, 3vh, 2.5rem)',
           flexShrink: 0
         }}>
-          <div className="year-tabs" style={{ 
+          <div style={{ 
             display: 'flex',
-            gap: `${30 * scale}px`,
+            gap: 'clamp(1rem, 2vw, 2rem)',
             justifyContent: 'space-between',
             alignItems: 'center',
             overflowX: 'auto',
@@ -258,32 +255,30 @@ export default function Experience() {
               <button 
                 key={idx} 
                 onClick={() => scrollToIndex(idx)} 
-                className="year-button" 
                 style={{ 
                   flex: 1,
                   minWidth: 0,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: `${6 * scale}px`,
-                  padding: `${17 * scale}px ${40 * scale}px`,
-                  borderRadius: `${17 * scale}px`,
-                  border: idx === activeIndex ? '2px solid hsl(var(--accent))' : '2px solid rgba(255,255,255,0.1)',
-                  background: idx === activeIndex ? 'linear-gradient(135deg, hsl(var(--accent) / 0.25), hsl(var(--accent) / 0.1))' : 'rgba(255,255,255,0.03)',
+                  gap: '0.4rem',
+                  padding: 'clamp(0.75rem, 1.5vw, 1.25rem) clamp(1.5rem, 3vw, 2.5rem)',
+                  borderRadius: 'clamp(0.75rem, 1.5vw, 1.25rem)',
+                  border: idx === activeIndex ? '2px solid hsl(140, 70%, 60%)' : '2px solid rgba(255,255,255,0.1)',
+                  background: idx === activeIndex ? 'linear-gradient(135deg, hsl(140, 70%, 60%, 0.25), hsl(140, 70%, 60%, 0.1))' : 'rgba(255,255,255,0.03)',
                   cursor: 'pointer',
                   transition: 'all 0.25s ease',
-                  boxShadow: idx === activeIndex ? `0 ${7 * scale}px ${28 * scale}px hsl(var(--accent) / 0.3)` : 'none'
+                  boxShadow: idx === activeIndex ? '0 0.5rem 2rem hsl(140, 70%, 60%, 0.3)' : 'none'
                 }} 
-                aria-current={idx === activeIndex}
               >
                 <div style={{ 
-                  fontSize: `${28 * scale}px`,
+                  fontSize: 'clamp(1.25rem, 2vw, 1.75rem)',
                   fontWeight: '700',
-                  color: idx === activeIndex ? 'hsl(var(--accent))' : 'rgba(255,255,255,0.6)',
+                  color: idx === activeIndex ? 'hsl(140, 70%, 60%)' : 'rgba(255,255,255,0.6)',
                   transition: 'color 0.3s'
                 }}>{exp.year}</div>
                 <div style={{ 
-                  fontSize: `${14 * scale}px`,
+                  fontSize: 'clamp(0.7rem, 1vw, 0.875rem)',
                   color: 'rgba(255,255,255,0.5)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
@@ -294,15 +289,15 @@ export default function Experience() {
           </div>
         </div>
 
-        <div className="main-grid" style={{ 
+        <div style={{ 
           display: 'grid',
-          gridTemplateColumns: '48% 52%',
-          gap: `${32 * scale}px`,
+          gridTemplateColumns: '1fr 1fr',
+          gap: 'clamp(1.5rem, 3vw, 2rem)',
           alignItems: 'stretch',
-          height: `${690 * scale}px`
+          flex: 1,
+          minHeight: 0
         }}>
-          {/* Left Side - Text Content */}
-          <div ref={scrollContainerRef} className="exp-scroll" style={{ 
+          <div ref={scrollContainerRef} style={{ 
             overflowX: 'auto',
             overflowY: 'hidden',
             scrollSnapType: 'x mandatory',
@@ -312,64 +307,64 @@ export default function Experience() {
             scrollbarWidth: 'none'
           }}>
             {experiences.map((exp, idx) => (
-              <article key={idx} className="exp-panel" style={{ 
+              <article key={idx} style={{ 
                 minWidth: '100%',
                 scrollSnapAlign: 'start',
                 scrollSnapStop: 'always',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                paddingRight: `${32 * scale}px`
-              }} aria-hidden={idx !== activeIndex}>
-                <div className="exp-panel-inner" style={{ 
+                paddingRight: 'clamp(1rem, 2vw, 2rem)'
+              }}>
+                <div style={{ 
                   width: '100%',
                   animation: idx === activeIndex ? 'fadeIn 0.5s ease-in' : 'none'
                 }}>
-                  <div className="header" style={{ 
+                  <div style={{ 
                     display: 'flex',
                     alignItems: 'center',
-                    gap: `${30 * scale}px`,
-                    marginBottom: `${23 * scale}px`
+                    gap: 'clamp(1rem, 2vw, 2rem)',
+                    marginBottom: 'clamp(1rem, 2vh, 1.5rem)'
                   }}>
-                    <div className="accent" style={{ 
-                      width: `${8 * scale}px`,
-                      height: `${92 * scale}px`,
+                    <div style={{ 
+                      width: 'clamp(4px, 0.5vw, 8px)',
+                      height: 'clamp(4rem, 8vh, 6rem)',
                       borderRadius: '999px',
                       flexShrink: 0,
                       background: `linear-gradient(180deg, ${exp.color}, transparent)`
                     }} />
                     <div>
-                      <h3 className="role" style={{ 
-                        fontSize: `${30 * scale}px`,
+                      <h3 style={{ 
+                        fontSize: 'clamp(1.25rem, 2vw, 1.875rem)',
                         fontWeight: '700',
-                        marginBottom: `${6 * scale}px`,
+                        marginBottom: '0.375rem',
                         color: exp.color,
                         lineHeight: '1.2'
                       }}>{exp.role}</h3>
-                      <div className="company" style={{ 
-                        fontSize: `${21 * scale}px`,
+                      <div style={{ 
+                        fontSize: 'clamp(1rem, 1.5vw, 1.25rem)',
                         color: 'rgba(255,255,255,0.6)',
                         fontWeight: '500'
                       }}>{exp.company}</div>
-                      <div className="period" style={{ 
-                        fontSize: `${16 * scale}px`,
+                      <div style={{ 
+                        fontSize: 'clamp(0.875rem, 1vw, 1rem)',
                         color: 'rgba(255,255,255,0.4)',
-                        marginTop: `${6 * scale}px`,
+                        marginTop: '0.375rem',
                         fontStyle: 'italic'
                       }}>{exp.period}</div>
                     </div>
                   </div>
-                  <div className="achievements" style={{ marginBottom: `${23 * scale}px` }}>
+                  <div style={{ marginBottom: 'clamp(1rem, 2vh, 1.5rem)' }}>
                     <h4 style={{ 
-                      fontSize: `${17 * scale}px`,
+                      fontSize: 'clamp(0.875rem, 1.25vw, 1.125rem)',
                       fontWeight: '600',
                       color: 'rgba(255,255,255,0.9)',
-                      marginBottom: `${12 * scale}px`
+                      marginBottom: '0.75rem'
                     }}>Key Achievements</h4>
                     <ul style={{ 
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: `${12 * scale}px`,
+                      gap: '0.75rem',
                       padding: 0,
                       margin: 0,
                       listStyle: 'none'
@@ -377,42 +372,42 @@ export default function Experience() {
                       {exp.achievements.map((a, i) => (
                         <li key={i} style={{ 
                           display: 'flex',
-                          gap: `${20 * scale}px`,
+                          gap: 'clamp(0.75rem, 1.5vw, 1.25rem)',
                           alignItems: 'flex-start'
                         }}>
-                          <span className="bullet" style={{ 
+                          <span style={{ 
                             color: exp.color,
-                            fontSize: `${18 * scale}px`,
+                            fontSize: 'clamp(1rem, 1.25vw, 1.125rem)',
                             lineHeight: 1,
-                            marginTop: `${3 * scale}px`,
+                            marginTop: '0.2rem',
                             flexShrink: 0
                           }}>▹</span>
-                          <span className="ach-text" style={{ 
+                          <span style={{ 
                             color: 'rgba(255,255,255,0.7)',
-                            fontSize: `${17 * scale}px`,
+                            fontSize: 'clamp(0.875rem, 1.125vw, 1.0625rem)',
                             lineHeight: '1.6'
                           }}>{a}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
-                  <div className="skills" style={{ marginBottom: `${23 * scale}px` }}>
+                  <div style={{ marginBottom: 'clamp(1rem, 2vh, 1.5rem)' }}>
                     <h4 style={{ 
-                      fontSize: `${17 * scale}px`,
+                      fontSize: 'clamp(0.875rem, 1.25vw, 1.125rem)',
                       fontWeight: '600',
                       color: 'rgba(255,255,255,0.9)',
-                      marginBottom: `${12 * scale}px`
+                      marginBottom: '0.75rem'
                     }}>Technologies & Skills</h4>
-                    <div className="skill-list" style={{ 
+                    <div style={{ 
                       display: 'flex',
                       flexWrap: 'wrap',
-                      gap: `${16 * scale}px`
+                      gap: 'clamp(0.5rem, 1vw, 1rem)'
                     }}>
                       {exp.skills.map((s, i) => (
-                        <span key={i} className="skill-pill" style={{ 
-                          padding: `${9 * scale}px ${24 * scale}px`,
-                          borderRadius: `${12 * scale}px`,
-                          fontSize: `${15 * scale}px`,
+                        <span key={i} style={{ 
+                          padding: 'clamp(0.375rem, 0.75vw, 0.5625rem) clamp(0.75rem, 1.5vw, 1.5rem)',
+                          borderRadius: 'clamp(0.5rem, 1vw, 0.75rem)',
+                          fontSize: 'clamp(0.8125rem, 1vw, 0.9375rem)',
                           fontWeight: '500',
                           transition: 'all 0.2s ease',
                           background: `${exp.color}15`,
@@ -422,104 +417,80 @@ export default function Experience() {
                       ))}
                     </div>
                   </div>
-                  <div className="documents" style={{ marginTop: `${23 * scale}px` }}>
+                  <div style={{ marginTop: 'clamp(1rem, 2vh, 1.5rem)' }}>
                     <h4 style={{ 
-                      fontSize: `${17 * scale}px`,
+                      fontSize: 'clamp(0.875rem, 1.25vw, 1.125rem)',
                       fontWeight: '600',
                       color: 'rgba(255,255,255,0.9)',
-                      marginBottom: `${12 * scale}px`
+                      marginBottom: '0.75rem'
                     }}>Documents</h4>
                     <div style={{ 
                       display: 'flex',
                       flexWrap: 'wrap',
-                      gap: `${20 * scale}px`
+                      gap: 'clamp(0.75rem, 1.5vw, 1.25rem)'
                     }}>
                       {exp.documents.offerLetter && (
                         <button 
                           onClick={() => openDocument(exp.documents.offerLetter, `${exp.company} - Offer Letter`)}
                           style={{ 
-                            padding: `${12 * scale}px ${30 * scale}px`,
-                            borderRadius: `${12 * scale}px`,
-                            fontSize: `${16 * scale}px`,
+                            padding: 'clamp(0.5rem, 1vw, 0.75rem) clamp(1rem, 2vw, 1.875rem)',
+                            borderRadius: 'clamp(0.5rem, 1vw, 0.75rem)',
+                            fontSize: 'clamp(0.875rem, 1vw, 1rem)',
                             fontWeight: '500',
                             background: 'rgba(255, 255, 255, 0.06)',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             color: 'rgba(255, 255, 255, 0.9)',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: `${12 * scale}px`,
+                            gap: '0.75rem',
                             transition: 'all 0.2s ease',
                             cursor: 'pointer'
-                          }} 
-                          className="doc-button"
+                          }}
                         >
-                          <svg width={14 * scale} height={14 * scale} viewBox="0 0 24 24" fill="none">
-                            <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M14 2V8H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          Offer Letter
+                          📄 Offer Letter
                         </button>
                       )}
                       {exp.documents.certificate && (
                         <button 
                           onClick={() => openDocument(exp.documents.certificate, `${exp.company} - Certificate`)}
                           style={{ 
-                            padding: `${12 * scale}px ${30 * scale}px`,
-                            borderRadius: `${12 * scale}px`,
-                            fontSize: `${16 * scale}px`,
+                            padding: 'clamp(0.5rem, 1vw, 0.75rem) clamp(1rem, 2vw, 1.875rem)',
+                            borderRadius: 'clamp(0.5rem, 1vw, 0.75rem)',
+                            fontSize: 'clamp(0.875rem, 1vw, 1rem)',
                             fontWeight: '500',
                             background: 'rgba(255, 255, 255, 0.06)',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             color: 'rgba(255, 255, 255, 0.9)',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: `${12 * scale}px`,
+                            gap: '0.75rem',
                             transition: 'all 0.2s ease',
                             cursor: 'pointer'
-                          }} 
-                          className="doc-button"
+                          }}
                         >
-                          <svg width={14 * scale} height={14 * scale} viewBox="0 0 24 24" fill="none">
-                            <path d="M12 15C15.866 15 19 11.866 19 8C19 4.13401 15.866 1 12 1C8.13401 1 5 4.13401 5 8C5 11.866 8.13401 15 12 15Z" stroke="currentColor" strokeWidth="2"/>
-                            <path d="M8.21 13.89L7 23L12 20L17 23L15.79 13.88" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          Certificate
+                          🏆 Certificate
                         </button>
                       )}
                       {exp.documents.experienceLetter && (
                         <button 
                           onClick={() => openDocument(exp.documents.experienceLetter, `${exp.company} - Experience Letter`)}
                           style={{ 
-                            padding: `${12 * scale}px ${30 * scale}px`,
-                            borderRadius: `${12 * scale}px`,
-                            fontSize: `${16 * scale}px`,
+                            padding: 'clamp(0.5rem, 1vw, 0.75rem) clamp(1rem, 2vw, 1.875rem)',
+                            borderRadius: 'clamp(0.5rem, 1vw, 0.75rem)',
+                            fontSize: 'clamp(0.875rem, 1vw, 1rem)',
                             fontWeight: '500',
                             background: 'rgba(255, 255, 255, 0.06)',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             color: 'rgba(255, 255, 255, 0.9)',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: `${12 * scale}px`,
+                            gap: '0.75rem',
                             transition: 'all 0.2s ease',
                             cursor: 'pointer'
-                          }} 
-                          className="doc-button"
+                          }}
                         >
-                          <svg width={14 * scale} height={14 * scale} viewBox="0 0 24 24" fill="none">
-                            <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <path d="M14 2V8H20M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          Experience Letter
+                          📋 Experience Letter
                         </button>
-                      )}
-                      {!exp.documents.offerLetter && !exp.documents.certificate && !exp.documents.experienceLetter && (
-                        <span style={{ 
-                          padding: `${12 * scale}px ${30 * scale}px`,
-                          borderRadius: `${12 * scale}px`,
-                          fontSize: `${16 * scale}px`,
-                          color: 'rgba(255, 255, 255, 0.4)',
-                          fontStyle: 'italic'
-                        }}>No documents available</span>
                       )}
                     </div>
                   </div>
@@ -528,32 +499,28 @@ export default function Experience() {
             ))}
           </div>
 
-          {/* Right Side - Slideshow with Fade Effect */}
           <div style={{
             position: 'relative',
             width: '100%',
             height: '100%',
-            minHeight: 'clamp(400px, 60vh, 600px)'
+            minHeight: '400px'
           }}>
-            {/* Gradient Fade Overlay - Left to Right */}
             <div style={{
               position: 'absolute',
               left: 0,
               top: 0,
               bottom: 0,
-              width: `${140 * scale}px`,
+              width: '140px',
               background: 'linear-gradient(to right, rgba(10, 14, 26, 1) 0%, rgba(10, 14, 26, 0.8) 40%, rgba(10, 14, 26, 0) 100%)',
               zIndex: 2,
               pointerEvents: 'none'
             }} />
-
-            {/* Slideshow Container */}
             <div style={{
               position: 'absolute',
               inset: 0,
-              borderRadius: `clamp(${12 * scale}px, 2vw, ${16 * scale}px)`,
+              borderRadius: 'clamp(12px, 2vw, 16px)',
               overflow: 'hidden',
-              boxShadow: `0 ${20 * scale}px ${60 * scale}px rgba(0,0,0,0.5)`,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
               border: '1px solid rgba(255,255,255,0.1)',
               backgroundColor: 'rgba(20, 20, 30, 0.5)'
             }}>
@@ -577,10 +544,6 @@ export default function Experience() {
                       objectFit: 'cover',
                       display: 'block'
                     }}
-                    onError={(e) => {
-                      console.error(`Failed to load image: ${img}`)
-                      e.target.style.display = 'none'
-                    }}
                   />
                 </div>
               ))}
@@ -588,35 +551,20 @@ export default function Experience() {
           </div>
         </div>
 
-        <style jsx>{`
-          @keyframes fadeIn { from { opacity:0; transform:translateX(-20px); } to { opacity:1; transform:translateX(0); } }
-          .year-tabs::-webkit-scrollbar { display: none; }
-          .year-button:hover { transform: translateY(-5px); }
-          .doc-button:hover { background: rgba(255, 255, 255, 0.1) !important; border-color: rgba(255, 255, 255, 0.2) !important; transform: translateY(-3px); }
+        <style>{`
+          @keyframes fadeIn { 
+            from { opacity:0; transform:translateX(-20px); } 
+            to { opacity:1; transform:translateX(0); } 
+          }
           
           @media (max-width: 968px) { 
             .main-grid { 
               grid-template-columns: 1fr !important; 
-              gap: ${35 * scale}px !important; 
-            } 
-            .slideshow-container { 
-              height: ${460 * scale}px !important; 
-            } 
-          }
-          
-          @media (max-width: 640px) { 
-            .year-tabs { 
-              justify-content: flex-start !important; 
-              overflow-x: auto !important; 
-            } 
-            .year-button { 
-              min-width: ${200 * scale}px !important; 
             } 
           }
         `}</style>
       </section>
 
-      {/* Document Viewer Modal */}
       {selectedDocument && (
         <DocumentViewer 
           document={selectedDocument} 
