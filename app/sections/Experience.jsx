@@ -50,7 +50,7 @@ export default function Experience() {
       documents: { 
         offerLetter: "/Experience/Raphe/Offer Letter Without CTC.png", 
         certificate: null, 
-        experienceLetter: null 
+        experienceLetter: "/Experience/Raphe/Experience Letter.pdf" 
       }
     },
     {
@@ -69,7 +69,7 @@ export default function Experience() {
         '/Experience/IISc/Slideshow/IISc3.jpeg',
       ],
       documents: { 
-        offerLetter: null, 
+        offerLetter: "/Experience/IISc/IISc Offer Letter.jpg", 
         certificate: null, 
         experienceLetter: null 
       }
@@ -108,9 +108,9 @@ export default function Experience() {
         '/Experience/CSIR SERC/CSIR SERC (21).jpg',
       ],
       documents: { 
-        offerLetter: '/docs/csir-offer.pdf', 
-        certificate: '/docs/csir-certificate.pdf', 
-        experienceLetter: '/docs/csir-experience.pdf' 
+        offerLetter: null, 
+        certificate: '/Experience/CSIR SERC/CSIR SERC Certificate.jpg', 
+        experienceLetter: null
       }
     },
     {
@@ -133,7 +133,7 @@ export default function Experience() {
       ],
       documents: { 
         offerLetter: null, 
-        certificate: null, 
+        certificate: '/Experience/VIT/VITC.jpg', 
         experienceLetter: null 
       }
     },
@@ -155,7 +155,7 @@ export default function Experience() {
       ],
       documents: { 
         offerLetter: null, 
-        certificate: null, 
+        certificate: "/Experience/AppBell/AppBell Internship Certificate.jpg", 
         experienceLetter: null 
       }
     },
