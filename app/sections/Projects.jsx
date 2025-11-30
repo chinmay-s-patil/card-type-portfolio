@@ -10,6 +10,45 @@ export default function Projects() {
   const [scale, setScale] = useState(1)
   const scrollContainerRef = useRef(null)
 
+  // Helper function to convert project title to URL slug
+  const getProjectSlug = (project) => {
+    return project.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+  }
+
+  // Handle deep linking on mount and hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash
+      const projectMatch = hash.match(/#projects#(.+)/)
+      
+      if (projectMatch) {
+        const projectSlug = projectMatch[1]
+        const project = projectsList.find(p => getProjectSlug(p) === projectSlug)
+        
+        if (project) {
+          setSelectedProject(project)
+        }
+      }
+    }
+
+    handleHashChange()
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  // Open project and update URL
+  const openProject = (project) => {
+    setSelectedProject(project)
+    const slug = getProjectSlug(project)
+    window.history.pushState(null, '', `#projects#${slug}`)
+  }
+
+  // Close project and clean URL
+  const closeProject = () => {
+    setSelectedProject(null)
+    window.history.pushState(null, '', '#projects')
+  }
+
   // Reference: 2560x1440 @ 100% scale
   const BASE_WIDTH = 1920
   const BASE_HEIGHT = 1080
@@ -19,11 +58,9 @@ export default function Projects() {
       const viewportWidth = window.innerWidth
       const viewportHeight = window.innerHeight
       
-      // Calculate scale based on viewport dimensions relative to base
       const widthScale = viewportWidth / BASE_WIDTH
       const heightScale = viewportHeight / BASE_HEIGHT
       
-      // Use the smaller scale to prevent overflow
       const newScale = Math.min(widthScale, heightScale)
       setScale(newScale)
     }
@@ -96,7 +133,7 @@ export default function Projects() {
         {/* Header */}
         <div style={{ 
           flexShrink: 0, 
-          marginBottom: `${40 * scale}px`
+          marginBottom: `${24 * scale}px`
         }}>
           <div className="kicker" style={{
             fontSize: `${14 * scale}px`,
@@ -105,9 +142,9 @@ export default function Projects() {
             Portfolio
           </div>
           <h2 style={{
-            fontSize: `${56 * scale}px`,
+            fontSize: `${48 * scale}px`,
             fontWeight: '700',
-            marginBottom: `${20 * scale}px`,
+            marginBottom: `${16 * scale}px`,
             background: 'linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
@@ -118,9 +155,9 @@ export default function Projects() {
           </h2>
           <p className="muted" style={{ 
             maxWidth: '65ch',
-            fontSize: `${18 * scale}px`,
+            fontSize: `${16 * scale}px`,
             lineHeight: '1.6',
-            marginBottom: `${24 * scale}px`
+            marginBottom: `${16 * scale}px`
           }}>
             A showcase of computational fluid dynamics simulations, visualization tools, 
             and web applications that demonstrate my technical capabilities and problem-solving approach.
@@ -133,7 +170,7 @@ export default function Projects() {
           justifyContent: 'center',
           alignItems: 'center',
           gap: `${20 * scale}px`,
-          marginBottom: `${40 * scale}px`,
+          marginBottom: `${24 * scale}px`,
           flexShrink: 0
         }}>
           <button
@@ -217,7 +254,7 @@ export default function Projects() {
           </button>
         </div>
 
-        {/* Horizontal Scroll Container */}
+        {/* Horizontal Scroll Container - ALL CONTENT VISIBLE */}
         <div 
           ref={scrollContainerRef}
           className="projects-scroll"
@@ -239,20 +276,29 @@ export default function Projects() {
               style={{
                 minWidth: '100%',
                 width: '100%',
+                height: '100%',
                 flexShrink: 0,
                 scrollSnapAlign: 'start',
                 scrollSnapStop: 'always',
                 display: 'flex',
-                alignItems: 'flex-start',
-                paddingTop: `${20 * scale}px`
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
             >
-              <div style={{ width: '100%' }}>
+              <div style={{ 
+                width: '100%', 
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
                 <div className="projects-grid" style={{
                   display: 'grid',
-                  gap: `${28 * scale}px`,
+                  gap: `${24 * scale}px`,
                   gridTemplateColumns: 'repeat(3, 1fr)',
-                  gridTemplateRows: 'repeat(2, 1fr)'
+                  gridTemplateRows: 'repeat(2, 1fr)',
+                  width: '100%',
+                  height: 'fit-content',
+                  maxHeight: '100%'
                 }}>
                   {projects
                     .slice(pageIndex * PROJECTS_PER_PAGE, (pageIndex + 1) * PROJECTS_PER_PAGE)
@@ -262,7 +308,7 @@ export default function Projects() {
                         title={p.title}
                         period={p.period}
                         tags={p.tags}
-                        onClick={() => setSelectedProject(p)}
+                        onClick={() => openProject(p)}
                       />
                     ))}
                 </div>
@@ -275,7 +321,7 @@ export default function Projects() {
       {selectedProject && (
         <ProjectModal 
           project={selectedProject} 
-          onClose={() => setSelectedProject(null)} 
+          onClose={closeProject} 
         />
       )}
 
@@ -293,27 +339,27 @@ export default function Projects() {
         @media (min-width: 1400px) {
           .projects-grid {
             grid-template-columns: repeat(3, 1fr) !important;
-            grid-template-rows: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr) !important;
           }
         }
 
         @media (min-width: 900px) and (max-width: 1399px) {
           .projects-grid {
             grid-template-columns: repeat(2, 1fr) !important;
-            grid-template-rows: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr) !important;
           }
         }
 
         @media (max-width: 899px) {
           .projects-grid {
             grid-template-columns: 1fr !important;
-            grid-auto-rows: auto;
+            grid-template-rows: auto !important;
           }
         }
 
-        /* Ensure consistent aspect ratio for cards */
         .projects-grid > * {
-          min-height: clamp(200px, 30vh, 280px);
+          height: 100%;
+          min-height: 0;
         }
       `}</style>
     </>
