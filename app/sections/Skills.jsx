@@ -47,10 +47,10 @@ export default function Skills() {
       'PyTorch', 'Deep Learning', 'Computer Vision',
       'Neural Networks', 'Model Training'
     ],
-    'Web Development': [
-      'Next.js', 'React', 'Tailwind CSS', 
-      'Git', 'GitHub'
-    ]
+    // 'Web Development': [
+    //   'Next.js', 'React', 'Tailwind CSS', 
+    //   'Git', 'GitHub'
+    // ]
   }
 
   return (
