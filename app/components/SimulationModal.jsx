@@ -113,12 +113,15 @@ export default function SimulationModal({ simulation, onClose }) {
         </button>
 
         {/* Content */}
-        <div style={{ 
-          overflowY: 'auto', 
-          overflowX: 'hidden',
-          padding: '2.5rem',
-          flex: 1
-        }}>
+        <div 
+          className="modal-content-scroll"
+          style={{ 
+            overflowY: 'auto', 
+            overflowX: 'hidden',
+            padding: '2.5rem',
+            flex: 1
+          }}
+        >
           {/* Header */}
           <div style={{ marginBottom: '2rem' }}>
             <div style={{
@@ -445,6 +448,29 @@ export default function SimulationModal({ simulation, onClose }) {
             opacity: 1;
             transform: translateY(0);
           }
+        }
+
+        /* Custom scrollbar styling */
+        .modal-content-scroll::-webkit-scrollbar {
+          width: 8px;
+        }
+        .modal-content-scroll::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 4px;
+        }
+        .modal-content-scroll::-webkit-scrollbar-thumb {
+          background: linear-gradient(180deg, hsl(var(--accent)), rgba(140, 255, 200, 0.6));
+          border-radius: 4px;
+          transition: background 0.3s ease;
+        }
+        .modal-content-scroll::-webkit-scrollbar-thumb:hover {
+          background: hsl(var(--accent));
+          box-shadow: 0 0 8px hsl(var(--accent) / 0.5);
+        }
+        /* Firefox scrollbar */
+        .modal-content-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: hsl(var(--accent)) rgba(255, 255, 255, 0.05);
         }
       `}</style>
     </div>

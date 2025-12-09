@@ -1,7 +1,7 @@
 const projectsList = [
     {
         title: 'Optimization of Pyrolysis-Based Plastic Oil Yield',
-        category: 'B.Tech Thesis',
+        category: 'Experimentation',
         subtitle: 'ML Model · Experimental Analysis',
         period: 'Jul 2024 — Jan 2025',
         description: 'Designed and executed Taguchi-based pyrolysis experiments on HDPE, PS, and blended feeds to maximize oil conversion. Characterized feedstocks via TGA, SEM-EDAX, and analyzed pyrolysis oils with GC-MS. Implemented and benchmarked five ML models, achieving up to 95.96% R² for yield prediction.',
@@ -23,7 +23,7 @@ const projectsList = [
     },
     {
         title: 'Hybrid Battery Cooling Mechanism',
-        category: 'Thermal Management',
+        category: 'Thermal',
         subtitle: 'Ansys CFD · SolidWorks',
         period: 'Jul 2024 — Jan 2025',
         description: 'Developed a thermal management system using TIM, PCM, and liquid coolant to enhance battery performance. Utilized SolidWorks for 3D design and Ansys for simulation, realizing a 67.31% improvement in cooling efficiency.',
@@ -42,7 +42,7 @@ const projectsList = [
     },
     {
         title: 'Reverse Engineering S500 Drone',
-        category: '3D Scanning & CAD',
+        category: 'CAD',
         subtitle: '3D Scanning · Geomagic',
         period: 'Jan 2024 — Mar 2024',
         description: 'Captured detailed 3D scans and rebuilt a SolidWorks model with 0.01mm tolerance for the S500 drone, including full assembly validation against kit documentation.',
@@ -70,7 +70,7 @@ const projectsList = [
     },
     {
         title: 'CFD Evaluation of Drone Propeller Downwash',
-        category: 'Aerodynamics',
+        category: 'CFD',
         subtitle: 'OpenFOAM · Flow Analysis',
         period: 'Jan 2025 — Feb 2025',
         description: 'Simulated drone propeller downwash in OpenFOAM. Quantified lift coefficient distribution and provided design recommendations for improved flight stability.',
@@ -87,7 +87,7 @@ const projectsList = [
     },
     {
         title: 'Wind Turbine Simulation in StarCCM+',
-        category: 'Renewable Energy',
+        category: 'CFD',
         subtitle: 'StarCCM+ · CFD Simulation',
         period: 'Oct 2024',
         description: 'Performed a detailed CFD simulation of a wind turbine using StarCCM+. The simulation included mesh generation, setup of physics models, and boundary conditions to analyze aerodynamic performance. A video of the simulation will be incorporated to demonstrate results and workflow.',
@@ -104,7 +104,7 @@ const projectsList = [
     },
     {
         title: 'Solar Parapet Roof Panel Aerodynamics',
-        category: 'Building CFD',
+        category: 'CFD',
         subtitle: 'OpenFOAM · Custom ABL',
         period: 'Mar 2025',
         description: 'Simulated wind loads on parapet roof-mounted solar panels in OpenFOAM using custom atmospheric boundary layer conditions. Assessed parapet height effects for durable installations.',
@@ -121,7 +121,7 @@ const projectsList = [
     },
     {
         title: 'Propeller Aeroacoustics Study',
-        category: 'Acoustics',
+        category: 'CFD',
         subtitle: 'LES · FW-H · Ansys Fluent',
         period: 'Apr 2025',
         description: 'LES-based aeroacoustic simulations of propellers in ANSYS Fluent using sliding mesh and FW-H analogy. Compared acoustic performance of standard, foldable, and toroidal geometries at multiple receiver locations.',
@@ -136,43 +136,43 @@ const projectsList = [
         ],
         href: '#'
     },
-    {
-        title: 'Natural Gas Combustion Simulation',
-        category: 'Combustion',
-        subtitle: 'OpenFOAM · AMR',
-        period: 'May 2025 — Present',
-        description: 'Simulating combustion of Indian natural gas on a stove burner in OpenFOAM using adaptive mesh refinement. Investigating flame structure, pollutant formation, and efficiency under varying burner configurations.',
-        learnings: [
-        'Implemented adaptive mesh refinement for combustion',
-        'Modeled pollutant formation and emissions',
-        'Optimized burner design for efficiency'
-        ],
-        tags: ['Combustion', 'CFD', 'Energy', 'OpenFOAM'],
-        media: [
-        { type: 'image', src: '/projects/combustion.jpg' }
-        ],
-        href: '#'
-    },
-    {
-        title: 'Laser Bed Powder Fusion Simulations',
-        category: 'Additive Manufacturing',
-        subtitle: 'Process Analysis · Thermal',
-        period: 'Nov 2024 — Feb 2025',
-        description: 'Simulated melting, solidification, and microstructure evolution during LBPF additive manufacturing. Evaluated how laser and powder parameters impact defect rate and mechanical properties.',
-        learnings: [
-        'Simulated LBPF melting and solidification',
-        'Analyzed microstructure evolution',
-        'Optimized process parameters for quality'
-        ],
-        tags: ['Additive Manufacturing', 'Thermal', 'Materials', 'Process'],
-        media: [
-        { type: 'image', src: '/projects/lbpf.jpg' }
-        ],
-        href: '#'
-    },
+    // {
+    //     title: 'Natural Gas Combustion Simulation',
+    //     category: 'Combustion',
+    //     subtitle: 'OpenFOAM · AMR',
+    //     period: 'May 2025 — Present',
+    //     description: 'Simulating combustion of Indian natural gas on a stove burner in OpenFOAM using adaptive mesh refinement. Investigating flame structure, pollutant formation, and efficiency under varying burner configurations.',
+    //     learnings: [
+    //     'Implemented adaptive mesh refinement for combustion',
+    //     'Modeled pollutant formation and emissions',
+    //     'Optimized burner design for efficiency'
+    //     ],
+    //     tags: ['Combustion', 'CFD', 'Energy', 'OpenFOAM'],
+    //     media: [
+    //     { type: 'image', src: '/projects/combustion.jpg' }
+    //     ],
+    //     href: '#'
+    // },
+    // {
+    //     title: 'Laser Bed Powder Fusion Simulations',
+    //     category: 'Additive Manufacturing',
+    //     subtitle: 'Process Analysis · Thermal',
+    //     period: 'Nov 2024 — Feb 2025',
+    //     description: 'Simulated melting, solidification, and microstructure evolution during LBPF additive manufacturing. Evaluated how laser and powder parameters impact defect rate and mechanical properties.',
+    //     learnings: [
+    //     'Simulated LBPF melting and solidification',
+    //     'Analyzed microstructure evolution',
+    //     'Optimized process parameters for quality'
+    //     ],
+    //     tags: ['Additive Manufacturing', 'Thermal', 'Materials', 'Process'],
+    //     media: [
+    //     { type: 'image', src: '/projects/lbpf.jpg' }
+    //     ],
+    //     href: '#'
+    // },
     {
         title: 'Immersion Cooling in Battery Thermal Management',
-        category: 'Thermal Systems',
+        category: 'Thermal',
         subtitle: 'Parametric Study · OpenFOAM',
         period: 'Nov 2024 — Feb 2025',
         description: 'Parametric analysis of coolant type, C-rating, and inlet velocity for battery cooling in OpenFOAM. Achieved a 43.99% temperature reduction with optimal configuration.',
@@ -189,7 +189,7 @@ const projectsList = [
     },
     {
         title: 'Simulation of Truck Platooning',
-        category: 'Vehicle Aerodynamics',
+        category: 'CFD',
         subtitle: 'OpenFOAM · Drag Reduction',
         period: 'Nov 2024 — Feb 2025',
         description: 'CFD simulation in OpenFOAM studying aerodynamic interactions in truck platooning. Investigated drag reduction and fuel efficiency improvements with optimal vehicle spacing.',
@@ -204,26 +204,26 @@ const projectsList = [
         ],
         href: '#'
     },
-    {
-        title: 'PINN for CFD Simulations',
-        category: 'Machine Learning',
-        subtitle: 'Physics-Informed Neural Net',
-        period: 'Dec 2024 — Mar 2024',
-        description: 'Developed a Physics-Informed Neural Network model for simulating flow around a cylinder. Explored variable geometry embedding and model validation against classical CFD.',
-        learnings: [
-        'Developed PINN for fluid dynamics',
-        'Trained model on cylinder flow physics',
-        'Validated against traditional CFD results'
-        ],
-        tags: ['Machine Learning', 'CFD', 'Physics', 'Neural Networks'],
-        media: [
-        { type: 'image', src: '/projects/pinn.jpg' }
-        ],
-        href: '#'
-    },
+    // {
+    //     title: 'PINN for CFD Simulations',
+    //     category: 'ML',
+    //     subtitle: 'Physics-Informed Neural Net',
+    //     period: 'Dec 2024 — Mar 2024',
+    //     description: 'Developed a Physics-Informed Neural Network model for simulating flow around a cylinder. Explored variable geometry embedding and model validation against classical CFD.',
+    //     learnings: [
+    //     'Developed PINN for fluid dynamics',
+    //     'Trained model on cylinder flow physics',
+    //     'Validated against traditional CFD results'
+    //     ],
+    //     tags: ['Machine Learning', 'CFD', 'Physics', 'Neural Networks'],
+    //     media: [
+    //     { type: 'image', src: '/projects/pinn.jpg' }
+    //     ],
+    //     href: '#'
+    // },
     {
         title: 'Bullet Impact Simulations',
-        category: 'Impact Dynamics',
+        category: 'Explicit Dynamics',
         subtitle: 'Abaqus · FEA',
         period: 'Dec 2024 — Present',
         description: 'Explicit dynamics simulation of bullet impact on bolted plates using Abaqus. Evaluated stress distribution, deformation, and ballistic resistance to support protective structure design.',
@@ -241,7 +241,7 @@ const projectsList = [
     },
     {
         title: 'Aerodynamics of Ground-Mounted Solar Arrays',
-        category: 'Renewable Energy',
+        category: 'CFD',
         subtitle: 'CFD · Pressure Mapping',
         period: 'Dec 2024 — Feb 2025',
         description: 'Steady-state and transient CFD mapping of pressure and force on solar panel arrays. Assessment guided design for optimized structural durability and cost-efficiency.',
@@ -258,7 +258,7 @@ const projectsList = [
     },
     {
         title: 'CAD Model of Solar Vortex Engine',
-        category: 'Design Engineering',
+        category: 'CAD',
         subtitle: 'SolidWorks · Precision Modeling',
         period: 'Sept 2024',
         description: 'Designed research-grade CAD model of Solar Vortex Engine with 1mm tolerance for CFD baseline and future parametric optimization.',
@@ -276,7 +276,7 @@ const projectsList = [
     },
     {
         title: 'Wind Tunnel Test Section Modeling',
-        category: 'Experimental Setup',
+        category: 'CAD',
         subtitle: 'SolidWorks · Precision CAD',
         period: 'Jan 2024',
         description: '3D modeled a wind tunnel test section in SolidWorks from field measurements, maintaining 0.01mm tolerance for experimental reliability.',
@@ -294,7 +294,7 @@ const projectsList = [
     },
     {
         title: 'Computational Correlation of J-Integral parameter for Inclined Crack using FEM and ML',
-        category: 'Structural Analysis',
+        category: ['FEA', 'AIML'],
         subtitle: 'COMSOL · J-Integral · ML',
         period: 'Nov 2023 — Dec 2023',
         description: 'Simulated angled crack propagation in COMSOL with the J-integral method. Compiled data from 172,000+ fracture cases and built neural network models achieving 99.99% accuracy.',
@@ -320,7 +320,7 @@ const projectsList = [
     },
     {
         title: 'Graphite Rupture Strength Prediction',
-        category: 'Materials Science',
+        category: 'AIML',
         subtitle: 'Deep Learning · Property Prediction',
         period: 'Aug 2024',
         description: 'Developed a deep learning model (98.1% accuracy) for predicting graphite rupture strength using historic nuclear graphite datasets. Model accelerates property screening for reactor-grade materials.',
@@ -338,7 +338,7 @@ const projectsList = [
     },
     {
         title: 'Language Identification in Music',
-        category: 'Audio Processing',
+        category: 'AIML',
         subtitle: 'Python · PyTorch · MFCC',
         period: 'Aug 2024 — Nov 2024',
         description: 'Designed a deep learning model (97% accuracy) for identifying language in music using MFCC features. Built a robust preprocessing pipeline in PyTorch for noisy real-world inputs.',
@@ -355,7 +355,7 @@ const projectsList = [
     },
     {
         title: 'Guitar Design Project',
-        category: 'Product Design',
+        category: 'CAD',
         subtitle: 'CAD · Showcase',
         period: 'Feb 2022',
         description: 'Created a detailed, visually optimized CAD guitar model for a showcase project. Demonstrated surface modeling, assembly design, and engineering graphics skills.',
@@ -377,7 +377,7 @@ const projectsList = [
     },
     {
         title: 'Aerodynamics Lab Experiments',
-        category: 'Experimental Research',
+        category: 'Experimentation',
         subtitle: 'Instrumentation · Wind Tunnel',
         period: 'Feb 2023 — Mar 2025',
         description: 'Hands-on experiments in the Aerodynamics Laboratory (wind turbine instrumentation, hot-wire anemometry, pitot tube analysis) under Dr. Vinayagamurthy. Gained practical expertise in wind measurement and analysis techniques.',

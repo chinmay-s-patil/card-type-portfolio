@@ -3,9 +3,6 @@ import { useEffect, useState, useRef } from 'react'
 
 export default function NavDots({ sections }) {
   const [active, setActive] = useState(0)
-  const progressRef = useRef(null)
-  const [isScrolling, setIsScrolling] = useState(false)
-  const scrollTimeoutRef = useRef(null)
 
   useEffect(() => {
     const container = document.getElementById('sections')
@@ -42,28 +39,6 @@ export default function NavDots({ sections }) {
 
     sectionEls.forEach(el => observer.observe(el))
 
-    // Scroll progress tracking
-    function onScroll() {
-      const total = container.scrollHeight - container.clientHeight
-      const pos = container.scrollTop
-      const pct = total > 0 ? (pos / total) * 100 : 0
-      if (progressRef.current) {
-        progressRef.current.style.height = `${pct}%`
-      }
-
-      // Debounce scrolling state
-      setIsScrolling(true)
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsScrolling(false)
-      }, 150)
-    }
-
-    container.addEventListener('scroll', onScroll, { passive: true })
-    onScroll()
-
     // Keyboard navigation
     function onKey(e) {
       if (e.key === 'ArrowDown' || e.key === 'PageDown') {
@@ -85,11 +60,7 @@ export default function NavDots({ sections }) {
 
     return () => {
       observer.disconnect()
-      container.removeEventListener('scroll', onScroll)
       window.removeEventListener('keydown', onKey)
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current)
-      }
     }
   }, [active, sections])
 
@@ -108,62 +79,6 @@ export default function NavDots({ sections }) {
 
   return (
     <>
-      {/* Progress bar on the left */}
-      <div 
-        style={{
-          position: 'fixed',
-          left: '2rem',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          zIndex: 60,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '1rem',
-          animation: 'fadeInLeft 0.8s ease-out'
-        }}
-        aria-label="Scroll progress"
-      >
-        <div style={{
-          fontSize: '0.75rem',
-          color: 'var(--muted)',
-          writingMode: 'vertical-rl',
-          transform: 'rotate(180deg)',
-          letterSpacing: '0.15em',
-          marginBottom: '0.5rem'
-        }}>SECTIONS</div>
-        
-        <div 
-          style={{
-            width: '3px',
-            height: '200px',
-            background: 'rgba(255, 255, 255, 0.08)',
-            borderRadius: '999px',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-          role="progressbar" 
-          aria-valuemin="0" 
-          aria-valuemax="100" 
-          aria-valuenow={Math.round((active / (sections.length - 1)) * 100)}
-          aria-label="Scroll progress"
-        >
-          <div 
-            ref={progressRef} 
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: 'linear-gradient(180deg, hsl(var(--accent)), rgba(140, 255, 200, 0.6))',
-              height: '0%',
-              transition: 'height 0.2s ease-out',
-              boxShadow: '0 0 12px hsl(var(--accent) / 0.4)'
-            }}
-          />
-        </div>
-      </div>
-
       {/* Navigation dots on the right */}
       <div 
         style={{
@@ -237,7 +152,7 @@ export default function NavDots({ sections }) {
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative',
                 justifySelf: 'center',
-                transform: i === active ? 'scale(1.4)' : isScrolling && i !== active ? 'scale(0.9)' : 'scale(1)',
+                transform: i === active ? 'scale(1.4)' : 'scale(1)',
                 boxShadow: i === active ? '0 0 16px hsl(var(--accent) / 0.6)' : 'none'
               }}
               className={`nav-dot-hover ${i === active ? 'active' : ''}`}
@@ -262,17 +177,6 @@ export default function NavDots({ sections }) {
       </div>
 
       <style jsx>{`
-        @keyframes fadeInLeft {
-          from {
-            opacity: 0;
-            transform: translate(-20px, -50%);
-          }
-          to {
-            opacity: 1;
-            transform: translate(0, -50%);
-          }
-        }
-
         @keyframes fadeInRight {
           from {
             opacity: 0;

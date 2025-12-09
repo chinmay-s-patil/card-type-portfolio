@@ -1,63 +1,61 @@
 import NavDots from './components/NavDots'
 import Header from './components/Header'
-import SectionWrapper from './components/SectionWrapper'
-
-import Landing from './sections/Landing'
-import Education from './sections/Education'
-import Experience from './sections/Experience'
-import Skills from './sections/Skills'
-import Projects from './sections/Projects'
-import OpenFOAM from './sections/OpenFOAM'
-import Events from './sections/Events'
+import LandingNormalized from './sections/LandingNormalized'
+import EducationNormalized from './sections/EducationNormalized'
+import ExperienceNormalized from './sections/ExperienceNormalized'
+import SkillsNormalized from './sections/SkillsNormalized'
+import ProjectsNormalized from './sections/ProjectsNormalized'
+import OpenFOAMNormalized from './sections/OpenFOAMNormalized'
+import EventsNormalized from './sections/EventsNormalized'
 import Footer from './components/Footer'
 
 const sectionsMeta = [
-  { id: 'home', label: 'Home' },
+  { id: 'landing', label: 'Landing' },
   { id: 'education', label: 'Education' },
   { id: 'experience', label: 'Experience' },
   { id: 'skills', label: 'Skills' },
   { id: 'projects', label: 'Projects' },
   { id: 'openfoam', label: 'OpenFOAM' },
-  { id: 'events', label: 'Events' }
+  { id: 'events', label: 'Events' },
 ]
 
-const sectionComponents = {
-  home: Landing,
-  education: Education,
-  experience: Experience,
-  skills: Skills,
-  projects: Projects,
-  openfoam: OpenFOAM,
-  events: Events
-}
-
-export default function Home() {
+export default function Page() {
   return (
     <>
       <Header />
       <NavDots sections={sectionsMeta} />
       
       <main id="sections" aria-label="Portfolio sections">
-        {sectionsMeta.map((s, idx) => {
-          const Comp = sectionComponents[s.id]
-          return (
-            <SectionWrapper key={s.id} id={s.id} index={idx}>
-              <Comp />
-            </SectionWrapper>
-          )
-        })}
+        <section id="landing" className="section">
+          <LandingNormalized />
+        </section>
+
+        <section id="education" className="section">
+          <EducationNormalized />
+        </section>
+
+        <section id="experience" className="section">
+          <ExperienceNormalized />
+        </section>
         
-        {/* Footer as last section */}
-        <section 
-          id="contact" 
-          className="section" 
-          style={{ 
-            minHeight: 'auto', 
-            height: 'auto',
-            scrollSnapAlign: 'end',
-            padding: 0 
-          }}
-        >
+        <section id="skills" className="section">
+          <SkillsNormalized />
+        </section>
+        
+        <section id="projects" className="section">
+          <ProjectsNormalized />
+        </section>
+        
+        <section id="openfoam" className="section">
+          <OpenFOAMNormalized />
+        </section>
+        
+        <section id="events" className="section">
+          <EventsNormalized />
+        </section>
+        
+        {/* Footer as final scroll section (no dot) */}
+        <section id="contact" className="section" style={{ minHeight: 'auto', height: 'auto', padding: 0 }}>
           <Footer />
         </section>
       </main>
