@@ -76,7 +76,7 @@ const simulationsList = [
         },
         tags: ['LES', 'Rotation', 'Propulsion'],
         media: [
-        { type: 'video', src: '/OpenFoam/Propeller Simulation/Propeller Simulation.mp4' },
+        { type: 'video', src: '/OpenFoam/Propeller Simulation/VideoSpedUp.mp4' },
         ],
         color: '#48cae4',
         learnings: [
@@ -192,8 +192,7 @@ const simulationsList = [
         },
         tags: ['Mach Flow', 'Shock Wave', 'Compressible'],
         media: [
-        { type: 'video', src: '/openfoam/prism.mp4' },
-        { type: 'image', src: '/openfoam/prism-1.jpg' }
+        { type: 'video', src: '/openfoam/SupersonicPrism/U.mp4' },
         ],
         color: '#023e8a',
         learnings: [
@@ -217,8 +216,10 @@ const simulationsList = [
         },
         tags: ['Impact', 'VOF', 'Splash'],
         media: [
-        { type: 'video', src: '/openfoam/waterdrop.mp4' },
-        { type: 'image', src: '/openfoam/waterdrop-1.jpg' }
+        { type: 'video', src: '/OpenFoam/WaterDrop/vel 0 water.mp4' },
+        { type: 'video', src: '/OpenFoam/WaterDrop/vel 1 water.mp4' },
+        { type: 'video', src: '/OpenFoam/WaterDrop/vel 5 water.mp4' },
+        { type: 'video', src: '/OpenFoam/WaterDrop/vel 10 water.mp4' },
         ],
         color: '#00b4d8',
         learnings: [

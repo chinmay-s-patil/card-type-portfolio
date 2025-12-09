@@ -19,7 +19,7 @@ const projectsList = [
         { type: 'image', src: '/Projects/Pyrolysis of Plastics/Pyrolysis of Plastics (5).jpg'},
         { type: 'image', src: '/Projects/Pyrolysis of Plastics/Pyrolysis of Plastics (6).jpg'},
         ],
-        href: '#'
+        // href: '#'
     },
     {
         title: 'Hybrid Battery Cooling Mechanism',
@@ -81,7 +81,7 @@ const projectsList = [
         ],
         tags: ['CFD', 'Aerodynamics', 'OpenFOAM', 'Propeller'],
         media: [
-        { type: 'image', src: '/Projects/CFD Evaluation of Drone Propeller Downwash/CFD Evaluation of Drone Propeller Downwash.mp4' }
+        { type: 'video', src: '/Projects/CFD Evaluation of Drone Propeller Downwash/CFD Evaluation of Drone Propeller Downwash.mp4' }
         ],
         href: '#'
     },
@@ -115,7 +115,12 @@ const projectsList = [
         ],
         tags: ['CFD', 'Solar', 'Building', 'OpenFOAM'],
         media: [
-        { type: 'image', src: '/projects/solar-parapet.jpg' }
+        {
+            type: 'image', src: '/projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (1).jpeg',
+            type: 'image', src: '/projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (2).jpeg',
+            type: 'image', src: '/projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (3).jpeg',
+            type: 'image', src: '/projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (4).jpeg',
+        }
         ],
         href: '#'
     },
@@ -183,7 +188,7 @@ const projectsList = [
         ],
         tags: ['Thermal', 'Batteries', 'CFD', 'OpenFOAM'],
         media: [
-        { type: 'image', src: '/projects/immersion-cooling.jpg' }
+        { type: 'image', src: '/projects/Immersion Cooling in Battery Thermal Management/Immersion Cooling in Battery Thermal Management.png' }
         ],
         href: '#'
     },
@@ -234,8 +239,8 @@ const projectsList = [
         ],
         tags: ['Impact', 'FEA', 'Materials', 'Abaqus'],
         media: [
-        { type: 'image', src: '/Projects/Bullet Impact Simulations/Bullet Impact Simulations (1).avi' },
-        { type: 'image', src: '/Projects/Bullet Impact Simulations/Bullet Impact Simulations (2).avi' }
+        { type: 'video', src: '/Projects/Bullet Impact Simulations/Bullet Impact Simulations 1.mp4' },
+        { type: 'video', src: '/Projects/Bullet Impact Simulations/Bullet Impact Simulations 2.mp4' }
         ],
         href: '#'
     },
@@ -252,9 +257,14 @@ const projectsList = [
         ],
         tags: ['CFD', 'Solar', 'Optimization', 'Wind Loading'],
         media: [
-        { type: 'video', src: '/Projects/Aerodynamics of Ground-Mounted Solar Arrays/Aerodynamics of Ground-Mounted Solar Arrays.mp4' }
+            {type: 'video', src: '/Projects/Aerodynamics of Ground-Mounted Solar Arrays/Aerodynamics of Ground-Mounted Solar Arrays (1).mp4'},
+            {type: 'video', src: '/Projects/Aerodynamics of Ground-Mounted Solar Arrays/Aerodynamics of Ground-Mounted Solar Arrays (2).mp4'},
+            {type: 'video', src: '/Projects/Aerodynamics of Ground-Mounted Solar Arrays/Aerodynamics of Ground-Mounted Solar Arrays (3).mp4'},
+            {type: 'video', src: '/Projects/Aerodynamics of Ground-Mounted Solar Arrays/Aerodynamics of Ground-Mounted Solar Arrays (4).mp4'},
+            {type: 'video', src: '/Projects/Aerodynamics of Ground-Mounted Solar Arrays/Aerodynamics of Ground-Mounted Solar Arrays (5).mp4'},
+            {type: 'video', src: '/Projects/Aerodynamics of Ground-Mounted Solar Arrays/Aerodynamics of Ground-Mounted Solar Arrays (6).mp4'},
         ],
-        href: '#'
+        // href: '#'
     },
     {
         title: 'CAD Model of Solar Vortex Engine',
