@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import eventsList from '../consts/EventsList'
-import EventsModal from '../components/EventsModal' // Import the modal
+import EventsModal from '../components/EventsModal'
 
 export default function EventsNormalized() {
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [slideshowIndices, setSlideshowIndices] = useState({})
   const [scale, setScale] = useState(1)
-
+  const [currentPage, setCurrentPage] = useState(0)
+  const scrollContainerRef = useRef(null)
+  
   const BASE_WIDTH = 1920
   const BASE_HEIGHT = 1080
   const EVENTS_PER_PAGE = 3
@@ -30,12 +32,6 @@ export default function EventsNormalized() {
 
   const events = eventsList
   const totalPages = Math.ceil(events.length / EVENTS_PER_PAGE)
-  const [currentPage, setCurrentPage] = useState(0)
-
-  const currentEvents = events.slice(
-    currentPage * EVENTS_PER_PAGE,
-    (currentPage + 1) * EVENTS_PER_PAGE
-  )
 
   // Modal slideshow effect
   useEffect(() => {
@@ -59,12 +55,61 @@ export default function EventsNormalized() {
     return () => clearInterval(timer)
   }, [selectedEvent])
 
+  // Deep linking
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash
+      const eventMatch = hash.match(/#events#(.+)/)
+      
+      if (eventMatch) {
+        const eventSlug = eventMatch[1]
+        const event = events.find(e => 
+          e.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === eventSlug
+        )
+        if (event) setSelectedEvent(event)
+      }
+    }
+
+    handleHashChange()
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [events])
+
+  // Scroll detection
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const handleScroll = () => {
+      const scrollLeft = container.scrollLeft
+      const containerWidth = container.clientWidth
+      const page = Math.round(scrollLeft / containerWidth)
+      setCurrentPage(Math.min(page, totalPages - 1))
+    }
+
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    handleScroll()
+
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [totalPages])
+
+  const scrollToPage = (index) => {
+    const container = scrollContainerRef.current
+    if (!container) return
+    
+    const containerWidth = container.clientWidth
+    container.scrollTo({ left: containerWidth * index, behavior: 'smooth' })
+  }
+
   const openModal = (event) => {
     setSelectedEvent(event)
+    const slug = event.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    window.history.pushState(null, '', `#events#${slug}`)
   }
 
   const closeModal = () => {
     setSelectedEvent(null)
+    window.history.pushState(null, '', '#events')
   }
 
   return (
@@ -128,176 +173,17 @@ export default function EventsNormalized() {
             </p>
           </div>
 
-          {/* Events Grid */}
+          {/* Page Navigation */}
           <div style={{
-            flex: 1,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '32px',
-            alignItems: 'start',
-            marginBottom: '32px'
-          }}>
-            {currentEvents.map((event) => (
-              <div
-                key={event.id}
-                onClick={() => openModal(event)}
-                style={{
-                  cursor: 'pointer',
-                  transform: `rotate(${event.rotation}deg)`,
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-                }}
-                className="polaroid-card"
-              >
-                {/* Polaroid Frame */}
-                <div style={{
-                  background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
-                  padding: '16px',
-                  paddingBottom: '64px',
-                  borderRadius: '8px',
-                  boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), 0 1px 8px rgba(0, 0, 0, 0.3)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  {/* Year Badge */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '24px',
-                    left: '24px',
-                    padding: '8px 16px',
-                    background: 'rgba(0, 0, 0, 0.8)',
-                    backdropFilter: 'blur(8px)',
-                    borderRadius: '8px',
-                    fontSize: '20px',
-                    fontWeight: '900',
-                    color: event.color,
-                    zIndex: 10,
-                    border: `2px solid ${event.color}60`,
-                    boxShadow: `0 4px 12px ${event.color}30`
-                  }}>
-                    {event.year}
-                  </div>
-
-                  {/* Photo Preview */}
-                  <div style={{
-                    width: '100%',
-                    height: '280px',
-                    background: `linear-gradient(135deg, ${event.color}20, ${event.color}05)`,
-                    borderRadius: '4px',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    marginBottom: '16px'
-                  }}>
-                    <img
-                      src={event.images[0]}
-                      alt={event.title}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        filter: 'brightness(0.9)'
-                      }}
-                    />
-
-                    {/* Fallback */}
-                    <div style={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'none',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '48px',
-                      fontWeight: '900',
-                      color: event.color,
-                      opacity: 0.15
-                    }}>
-                      {event.year}
-                    </div>
-
-                    {/* Type Badge */}
-                    <div style={{
-                      position: 'absolute',
-                      top: '16px',
-                      right: '16px',
-                      padding: '6px 14px',
-                      background: 'rgba(0, 0, 0, 0.75)',
-                      backdropFilter: 'blur(8px)',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                      fontWeight: '700',
-                      color: event.color,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>
-                      {event.type}
-                    </div>
-                  </div>
-
-                  {/* Caption Area */}
-                  <div style={{
-                    fontFamily: "'Caveat', cursive",
-                    fontSize: '19px',
-                    color: '#e0e0e0',
-                    textAlign: 'center',
-                    marginBottom: '8px',
-                    fontWeight: '600'
-                  }}>
-                    {event.title}
-                  </div>
-
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#a0a0a0',
-                    textAlign: 'center',
-                    marginBottom: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px'
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                      <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" strokeWidth="2"/>
-                      <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
-                    {event.location}
-                  </div>
-
-                  <div style={{
-                    fontSize: '13px',
-                    color: '#808080',
-                    textAlign: 'center',
-                    fontStyle: 'italic'
-                  }}>
-                    {event.date}
-                  </div>
-
-                  {/* Tape Effect */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '-8px',
-                    left: '50%',
-                    transform: 'translateX(-50%) rotate(-2deg)',
-                    width: '80px',
-                    height: '20px',
-                    background: 'rgba(255, 255, 255, 0.3)',
-                    backdropFilter: 'blur(2px)',
-                    border: '1px solid rgba(0, 0, 0, 0.05)',
-                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-                  }} />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Navigation Controls */}
-          <div style={{ 
-            display: 'flex', 
+            display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            gap: '16px',
+            gap: '20px',
+            marginBottom: '24px',
             flexShrink: 0
           }}>
             <button
-              onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+              onClick={() => scrollToPage(Math.max(0, currentPage - 1))}
               disabled={currentPage === 0}
               style={{
                 width: '40px',
@@ -319,15 +205,15 @@ export default function EventsNormalized() {
               </svg>
             </button>
 
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               {Array.from({ length: totalPages }).map((_, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setCurrentPage(idx)}
+                  onClick={() => scrollToPage(idx)}
                   style={{
-                    width: idx === currentPage ? '48px' : '32px',
-                    height: '6px',
-                    borderRadius: '3px',
+                    width: idx === currentPage ? '48px' : '36px',
+                    height: '8px',
+                    borderRadius: '4px',
                     background: idx === currentPage ? 'hsl(var(--accent))' : 'rgba(255, 255, 255, 0.15)',
                     border: 'none',
                     cursor: 'pointer',
@@ -340,7 +226,7 @@ export default function EventsNormalized() {
             </div>
 
             <button
-              onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+              onClick={() => scrollToPage(Math.min(totalPages - 1, currentPage + 1))}
               disabled={currentPage === totalPages - 1}
               style={{
                 width: '40px',
@@ -362,10 +248,188 @@ export default function EventsNormalized() {
               </svg>
             </button>
           </div>
+
+          {/* Horizontal Scroll Container */}
+          <div 
+            ref={scrollContainerRef}
+            style={{
+              flex: 1,
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              scrollSnapType: 'x mandatory',
+              display: 'flex',
+              WebkitOverflowScrolling: 'touch',
+              minHeight: 0
+            }}
+          >
+            {Array.from({ length: totalPages }).map((_, pageIndex) => (
+              <div
+                key={pageIndex}
+                style={{
+                  minWidth: '100%',
+                  width: '100%',
+                  height: '100%',
+                  flexShrink: 0,
+                  scrollSnapAlign: 'start',
+                  scrollSnapStop: 'always',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '32px',
+                  alignItems: 'start',
+                  width: '100%',
+                  height: 'fit-content'
+                }}>
+                  {events
+                    .slice(pageIndex * EVENTS_PER_PAGE, (pageIndex + 1) * EVENTS_PER_PAGE)
+                    .map((event) => (
+                      <div
+                        key={event.id}
+                        onClick={() => openModal(event)}
+                        style={{
+                          cursor: 'pointer',
+                          transform: `rotate(${event.rotation}deg)`,
+                          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                        }}
+                        className="polaroid-card"
+                      >
+                        {/* Polaroid Frame */}
+                        <div style={{
+                          background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
+                          padding: '16px',
+                          paddingBottom: '64px',
+                          borderRadius: '8px',
+                          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), 0 1px 8px rgba(0, 0, 0, 0.3)',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}>
+                          {/* Year Badge */}
+                          <div style={{
+                            position: 'absolute',
+                            top: '24px',
+                            left: '24px',
+                            padding: '8px 16px',
+                            background: 'rgba(0, 0, 0, 0.8)',
+                            backdropFilter: 'blur(8px)',
+                            borderRadius: '8px',
+                            fontSize: '20px',
+                            fontWeight: '900',
+                            color: event.color,
+                            zIndex: 10,
+                            border: `2px solid ${event.color}60`,
+                            boxShadow: `0 4px 12px ${event.color}30`
+                          }}>
+                            {event.year}
+                          </div>
+
+                          {/* Photo Preview */}
+                          <div style={{
+                            width: '100%',
+                            height: '280px',
+                            background: `linear-gradient(135deg, ${event.color}20, ${event.color}05)`,
+                            borderRadius: '4px',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            marginBottom: '16px'
+                          }}>
+                            <img
+                              src={event.images[0]}
+                              alt={event.title}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                filter: 'brightness(0.9)'
+                              }}
+                            />
+
+                            {/* Type Badge */}
+                            <div style={{
+                              position: 'absolute',
+                              top: '16px',
+                              right: '16px',
+                              padding: '6px 14px',
+                              background: 'rgba(0, 0, 0, 0.75)',
+                              backdropFilter: 'blur(8px)',
+                              borderRadius: '20px',
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              color: event.color,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em'
+                            }}>
+                              {event.type}
+                            </div>
+                          </div>
+
+                          {/* Caption Area */}
+                          <div style={{
+                            fontFamily: "'Caveat', cursive",
+                            fontSize: '19px',
+                            color: '#e0e0e0',
+                            textAlign: 'center',
+                            marginBottom: '8px',
+                            fontWeight: '600'
+                          }}>
+                            {event.title}
+                          </div>
+
+                          <div style={{
+                            fontSize: '14px',
+                            color: '#a0a0a0',
+                            textAlign: 'center',
+                            marginBottom: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
+                          }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                              <path d="M21 10C21 17 12 23 12 23C12 23 3 17 3 10C3 7.61305 3.94821 5.32387 5.63604 3.63604C7.32387 1.94821 9.61305 1 12 1C14.3869 1 16.6761 1.94821 18.364 3.63604C20.0518 5.32387 21 7.61305 21 10Z" stroke="currentColor" strokeWidth="2"/>
+                              <circle cx="12" cy="10" r="3" stroke="currentColor" strokeWidth="2"/>
+                            </svg>
+                            {event.location}
+                          </div>
+
+                          <div style={{
+                            fontSize: '13px',
+                            color: '#808080',
+                            textAlign: 'center',
+                            fontStyle: 'italic'
+                          }}>
+                            {event.date}
+                          </div>
+
+                          {/* Tape Effect */}
+                          <div style={{
+                            position: 'absolute',
+                            top: '-8px',
+                            left: '50%',
+                            transform: 'translateX(-50%) rotate(-2deg)',
+                            width: '80px',
+                            height: '20px',
+                            background: 'rgba(255, 255, 255, 0.3)',
+                            backdropFilter: 'blur(2px)',
+                            border: '1px solid rgba(0, 0, 0, 0.05)',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                          }} />
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Use separate EventModal component */}
       {selectedEvent && (
         <EventsModal
           event={selectedEvent}
@@ -378,22 +442,6 @@ export default function EventsNormalized() {
       <style jsx>{`
         @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap');
 
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(40px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
         .polaroid-card:hover {
           transform: rotate(0deg) scale(1.05) translateY(-8px) !important;
           z-index: 10;
@@ -402,6 +450,11 @@ export default function EventsNormalized() {
         button:not(:disabled):hover {
           background: rgba(255, 255, 255, 0.15) !important;
           transform: scale(1.1);
+        }
+
+        /* Hide scrollbar for WebKit browsers */
+        div::-webkit-scrollbar {
+          display: none;
         }
 
         @media (max-width: 1200px) {

@@ -22,13 +22,35 @@ export default function SimulationModal({ simulation, onClose }) {
     return () => window.removeEventListener('keydown', handleEscape)
   }, [onClose])
 
-  // Autoplay current video when media changes
+  // Manage video playback when media changes
   useEffect(() => {
+    // Pause all videos and reset their time first
+    videoRefs.current.forEach((video) => {
+      if (video) {
+        video.pause()
+        video.currentTime = 0
+      }
+    })
+    
+    // Then play the current video if it's a video
     const currentVideo = videoRefs.current[currentMediaIndex]
     if (currentVideo && simulation.media[currentMediaIndex]?.type === 'video') {
       currentVideo.play().catch(err => console.log('Autoplay prevented:', err))
     }
   }, [currentMediaIndex, simulation.media])
+
+  // Cleanup videos on unmount
+  useEffect(() => {
+    return () => {
+      // Pause all videos when modal unmounts
+      videoRefs.current.forEach((video) => {
+        if (video) {
+          video.pause()
+          video.currentTime = 0
+        }
+      })
+    }
+  }, [])
 
   if (!simulation) return null
 
@@ -256,7 +278,6 @@ export default function SimulationModal({ simulation, onClose }) {
                       ref={el => videoRefs.current[idx] = el}
                       src={item.src}
                       loop
-                      autoPlay
                       muted
                       playsInline
                       style={{
