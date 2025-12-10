@@ -8,6 +8,7 @@ import ProjectsNormalized from './sections/ProjectsNormalized'
 import OpenFOAMNormalized from './sections/OpenFOAMNormalized'
 import EventsNormalized from './sections/EventsNormalized'
 import Footer from './components/Footer'
+import MobileWarning from './components/MobileWarning'
 
 const sectionsMeta = [
   { id: 'landing', label: 'Landing' },
@@ -22,6 +23,7 @@ const sectionsMeta = [
 export default function Page() {
   return (
     <>
+      <MobileWarning />  {/* Add this line */}
       <HeaderNormalized />
       <NavDots sections={sectionsMeta} />
       
