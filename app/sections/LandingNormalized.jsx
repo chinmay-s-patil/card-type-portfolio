@@ -63,11 +63,13 @@ export default function LandingNormalized() {
       <div
         style={{
           transform: `scale(${scale})`,
-          transformOrigin: 'top center',
+          transformOrigin: 'center center',
           width: BASE_WIDTH,
           height: BASE_HEIGHT,
-          position: 'relative',
-          margin: '0 auto',
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: `translate(-50%, -50%) scale(${scale})`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
