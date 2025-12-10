@@ -24,6 +24,41 @@ export default function LandingNormalized() {
 
   return (
     <>
+    {/* Google-font for the handwritten line */}
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playwrite+NO:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Audiowide&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Bruno+Ace+SC&display=swap');
+
+        // @font-face {
+        //   font-family: 'Bitcount Grid Single';
+        //   src: url('/fonts/bitcount.woff2') format('woff2');
+        //   font-weight: 400;
+        //   font-style: normal;
+        //   font-display: swap;
+        // }
+
+        // @font-face {
+        //   font-family: 'Bitcount Grid Single';
+        //   src: url('/fonts/bitcount.woff2') format('woff2-variations');
+        //   font-weight: 100 900;   /* full weight range */
+        //   font-style: normal;
+        //   font-display: swap;
+        // }
+
+        @font-face {
+          font-family: 'Bitcount Grid Single';
+          src: url('/fonts/BitcountGridSingle/BitcountGridSingle-VariableFont_CRSV,ELSH,ELXP,slnt,wght.ttf') format('woff2-variations');
+          font-weight: 100 900;
+          font-style: normal;
+          font-display: swap;
+        }
+
+      `}</style>
+
       {/* Main scaled container */}
       <div
         style={{
@@ -80,7 +115,7 @@ export default function LandingNormalized() {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text'
             }}>
-              Chinmay Patil
+              Chinmay S Patil
               <br />
               <span style={{
                 background: 'linear-gradient(135deg, hsl(var(--accent)) 0%, #14ffc8 100%)',
@@ -92,20 +127,43 @@ export default function LandingNormalized() {
               </span>
               {' '}& Visual Interfaces
             </h1>
+            
+            {/* subtitle */}
+            <div
+              style={{
+                fontSize: '20px',
+                lineHeight: 1.7,
+                marginBottom: '40px',
+                color: 'rgba(255,255,255,.68)',
+                maxWidth: '100%',
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: '"Bruno Ace SC", sans-serif',
+                  fontSize: '26px',
+                  color: '#fff',
+                  letterSpacing: '0.4px',
+                }}
+              >
+                Aerospace-engineering student who turns aerodynamic questions
+                into reliable numbers.
+              </span>
+              <br />
+              <br />
+              I focus on CFD and OpenFOAM, building reproducible simulation
+              setups and efficient data-processing tools. I&rsquo;m strong in
+              Python, AIML, and steadily growing my C++ skills—and I&rsquo;m an
+              avid learner, expanding my simulation capabilities every day.
 
-            {/* Subtitle */}
-            <p style={{
-              fontSize: '20px', // INCREASED from 18px
-              lineHeight: '1.7', // INCREASED line height
-              marginBottom: '40px', // INCREASED spacing
-              color: 'rgba(255, 255, 255, 0.68)',
-              maxWidth: '100%'
-            }}>
-              CFD engineer specializing in OpenFOAM and advanced visualization. I
-              create reproducible simulation pipelines and build intuitive web
-              interfaces that transform complex data into actionable insights for
-              engineers and stakeholders.
-            </p>
+              
+              {/* <span style={{ fontFamily: '"Audiowide", sans-serif' }}>
+                I focus on CFD and OpenFOAM, building reproducible simulation
+                setups and efficient data-processing tools. I&rsquo;m strong in
+                Python, AIML, and steadily growing my C++ skills—and
+                I&rsquo;m an avid learner, expanding my simulation capabilities every day.
+              </span> */}
+            </div>
 
             {/* CTA Buttons */}
             <div style={{

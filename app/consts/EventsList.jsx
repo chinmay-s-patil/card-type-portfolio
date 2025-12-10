@@ -5,7 +5,7 @@
       location: 'VIT Chennai',
       date: 'March 2025',
       year: '2025',
-      type: 'Symposium',
+      type: 'Organizer',
       images: [
         '/Events/International Symposium of Advanced Wind Energy/International Symposium of Advanced Wind Energy (1).jpg',
         '/Events/International Symposium of Advanced Wind Energy/International Symposium of Advanced Wind Energy (10).jpg',
@@ -87,7 +87,7 @@
       location: "VIT Chennai",
       date: "February 2024",
       year: "2024",
-      type: "Workshop",
+      type: "Hands-on Workshop",
       images: [
         "/Events/Drone VITC/Drone VITC (1).JPG",
         "/Events/Drone VITC/Drone VITC (2).JPG",

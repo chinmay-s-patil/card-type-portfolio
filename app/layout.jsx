@@ -1,4 +1,6 @@
+// app/layout.jsx
 import './globals.css'
+import { SpeedInsights } from '@vercel/speed-insights/next' // ← add this line
 
 export const metadata = {
   title: 'Chinmay Patil — Portfolio',
@@ -15,6 +17,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="font-sans bg-slate-900 text-slate-100">
         {children}
+        <SpeedInsights /> {/* ← drop it here */}
       </body>
     </html>
   )
