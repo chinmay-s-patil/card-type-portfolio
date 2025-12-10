@@ -82,7 +82,7 @@ export default function Experience() {
       <div
         style={{
           transform: `scale(${scale})`,
-          transformOrigin: 'center center',
+          transformOrigin: 'top center',
           width: BASE_WIDTH,
           height: BASE_HEIGHT,
           position: 'relative',
