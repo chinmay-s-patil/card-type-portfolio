@@ -1,5 +1,5 @@
 import NavDots from './components/NavDots'
-import Header from './components/Header'
+import HeaderNormalized from './components/HeaderNormalized'
 import LandingNormalized from './sections/LandingNormalized'
 import EducationNormalized from './sections/EducationNormalized'
 import ExperienceNormalized from './sections/ExperienceNormalized'
@@ -22,7 +22,7 @@ const sectionsMeta = [
 export default function Page() {
   return (
     <>
-      <Header />
+      <HeaderNormalized />
       <NavDots sections={sectionsMeta} />
       
       <main id="sections" aria-label="Portfolio sections">

@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
+import ScaledNavWrapper from './ScaledNavWrapper'
 
 export default function NavDots({ sections }) {
   const [active, setActive] = useState(0)
@@ -78,7 +79,7 @@ export default function NavDots({ sections }) {
   }
 
   return (
-    <>
+    <ScaledNavWrapper side="right">
       {/* Navigation dots on the right */}
       <div 
         style={{
@@ -210,6 +211,6 @@ export default function NavDots({ sections }) {
           transform: translateX(0) !important;
         }
       `}</style>
-    </>
+    </ScaledNavWrapper>
   )
 }
