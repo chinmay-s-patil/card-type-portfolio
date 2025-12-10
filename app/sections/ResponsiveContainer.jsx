@@ -31,7 +31,7 @@ export default function ResponsiveContainer({ children, className = '', style = 
     <div
       style={{
         transform: `scale(${scale})`,
-        transformOrigin: 'top center',
+        transformOrigin: 'center center',
         width: BASE_WIDTH,
         height: BASE_HEIGHT,
         position: 'relative',
