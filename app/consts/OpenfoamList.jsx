@@ -176,7 +176,7 @@ const simulationsList = [
         },
         tags: ['Mixing', 'MRF', 'Gas-Liquid'],
         media: [
-        { type: 'video', src: '/OpenFoam/stirringTank/stirringTank.mp4' },
+        { type: 'link', src: 'https://youtu.be/KbNo_iCuDbo?si=EdVwEDOwPyTG4qcp' },
         ],
         color: '#00a896',
         learnings: [
