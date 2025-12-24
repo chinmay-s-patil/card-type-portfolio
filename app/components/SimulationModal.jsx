@@ -6,7 +6,6 @@ export default function SimulationModal({ simulation, onClose }) {
   const videoRefs = useRef([])
 
   useEffect(() => {
-    // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = 'unset'
@@ -14,7 +13,6 @@ export default function SimulationModal({ simulation, onClose }) {
   }, [])
 
   useEffect(() => {
-    // Escape key to close
     const handleEscape = (e) => {
       if (e.key === 'Escape') onClose()
     }
@@ -24,7 +22,7 @@ export default function SimulationModal({ simulation, onClose }) {
 
   // Manage video playback when media changes
   useEffect(() => {
-    // Pause all videos and reset their time first
+    // Pause all local videos
     videoRefs.current.forEach((video) => {
       if (video) {
         video.pause()
@@ -32,7 +30,7 @@ export default function SimulationModal({ simulation, onClose }) {
       }
     })
     
-    // Then play the current video if it's a video
+    // Play current local video if it exists
     const currentVideo = videoRefs.current[currentMediaIndex]
     if (currentVideo && simulation.media[currentMediaIndex]?.type === 'video') {
       currentVideo.play().catch(err => console.log('Autoplay prevented:', err))
@@ -42,7 +40,6 @@ export default function SimulationModal({ simulation, onClose }) {
   // Cleanup videos on unmount
   useEffect(() => {
     return () => {
-      // Pause all videos when modal unmounts
       videoRefs.current.forEach((video) => {
         if (video) {
           video.pause()
@@ -62,6 +59,27 @@ export default function SimulationModal({ simulation, onClose }) {
 
   const prevMedia = () => {
     setCurrentMediaIndex((prev) => (prev - 1 + simulation.media.length) % simulation.media.length)
+  }
+
+  // Helper function to convert YouTube URL to embed URL
+  const getYouTubeEmbedUrl = (url) => {
+    // Extract video ID from various YouTube URL formats
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=)([^&\s]+)/,           // youtube.com/watch?v=VIDEO_ID
+      /(?:youtube\.com\/embed\/)([^?\s]+)/,             // youtube.com/embed/VIDEO_ID
+      /(?:youtu\.be\/)([^?\s]+)/,                        // youtu.be/VIDEO_ID
+      /(?:youtube\.com\/v\/)([^?\s]+)/                   // youtube.com/v/VIDEO_ID
+    ]
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match && match[1]) {
+        return `https://www.youtube.com/embed/${match[1]}`
+      }
+    }
+    
+    // If no pattern matches, return the original URL (might already be an embed URL)
+    return url
   }
 
   return (
@@ -273,7 +291,23 @@ export default function SimulationModal({ simulation, onClose }) {
                     pointerEvents: idx === currentMediaIndex ? 'auto' : 'none'
                   }}
                 >
-                  {item.type === 'video' ? (
+                  {/* YouTube Link (embedded) */}
+                  {item.type === 'link' && (
+                    <iframe
+                      src={getYouTubeEmbedUrl(item.src)}
+                      title={item.caption || simulation.title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        border: 'none'
+                      }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  )}
+
+                  {/* Local Video */}
+                  {item.type === 'video' && (
                     <video
                       ref={el => videoRefs.current[idx] = el}
                       src={item.src}
@@ -286,7 +320,10 @@ export default function SimulationModal({ simulation, onClose }) {
                         objectFit: 'contain'
                       }}
                     />
-                  ) : (
+                  )}
+
+                  {/* Image */}
+                  {item.type === 'image' && (
                     <img
                       src={item.src}
                       alt={item.caption || simulation.title}
