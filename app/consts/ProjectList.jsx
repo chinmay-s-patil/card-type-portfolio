@@ -115,14 +115,12 @@ const projectsList = [
         ],
         tags: ['CFD', 'Solar', 'Building', 'OpenFOAM'],
         media: [
-        {
-            type: 'image', src: '/projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (1).jpeg',
-            type: 'image', src: '/projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (2).jpeg',
-            type: 'image', src: '/projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (3).jpeg',
-            type: 'image', src: '/projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (4).jpeg',
-        }
+            {type: 'image', src: 'Projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (1).jpeg',},
+            {type: 'image', src: 'Projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (2).jpeg',},
+            {type: 'image', src: 'Projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (3).jpeg',},
+            {type: 'image', src: 'Projects/Solar Parapet Roof Panel Aerodynamics/Solar Parapet Roof Panel Aerodynamics (4).jpeg',},
         ],
-        href: '#'
+        // href: '#'
     },
     {
         title: 'Propeller Aeroacoustics Study',

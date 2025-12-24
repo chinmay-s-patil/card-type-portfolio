@@ -23,7 +23,7 @@ const sectionsMeta = [
 export default function Page() {
   return (
     <>
-      <MobileWarning />  {/* Add this line */}
+      {/* <MobileWarning /> */}
       <HeaderNormalized />
       <NavDots sections={sectionsMeta} />
       

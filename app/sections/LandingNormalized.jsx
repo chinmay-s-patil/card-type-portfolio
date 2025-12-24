@@ -243,7 +243,7 @@ export default function LandingNormalized() {
                   lineHeight: '1.6',
                   color: 'rgba(255, 255, 255, 0.68)'
                 }}>
-                  CFD · OpenFOAM · Python · Next.js · Data Visualization
+                  CFD · OpenFOAM · Thermal · SuperSonic ·  · Python
                 </p>
               </div>
 

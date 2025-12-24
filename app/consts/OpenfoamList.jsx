@@ -1,10 +1,39 @@
 const simulationsList = [
     {
         id: 1,
+        title: 'Water Droplet Impact',
+        category: 'Multiphase Flow',
+        solver: 'interIsoFoam',
+        year: '2025',
+        date: '05/2025',
+        description: 'High-resolution simulation of a droplet impact event on a water surface capturing crown formation and secondary breakup dynamics.',
+        specs: {
+        cells: '~1.5M',
+        turbulence: 'LES',
+        runtime: '20 hours',
+        cores: '8'
+        },
+        tags: ['Impact', 'VOF', 'Splash'],
+        media: [
+        { type: 'video', src: '/OpenFoam/WaterDrop/vel 0 water.mp4' },
+        { type: 'video', src: '/OpenFoam/WaterDrop/vel 1 water.mp4' },
+        { type: 'video', src: '/OpenFoam/WaterDrop/vel 5 water.mp4' },
+        { type: 'video', src: '/OpenFoam/WaterDrop/vel 10 water.mp4' },
+        ],
+        color: '#00b4d8',
+        learnings: [
+        'Captured crown formation',
+        'Analyzed secondary breakup',
+        'High-resolution interface tracking'
+        ]
+    },
+    {
+        id: 10,
         title: 'BubbleSim',
         category: 'Multiphase Flow',
         solver: 'interIsoFoam',
         year: '2024',
+        date: '01/2024',
         description: 'Two-phase bubble dynamics simulation capturing interface evolution and surface tension effects using the Volume of Fluid (VOF) method.',
         specs: {
         turbulence: 'LAMINAR',
@@ -26,6 +55,7 @@ const simulationsList = [
         category: 'Vehicle Aerodynamics',
         solver: 'pimpleFoam',
         year: '2025',
+        date: '04/2024',
         description: 'Aerodynamic analysis of a Formula 1 car under ground effect conditions. Simulated flow separation, diffuser efficiency, and pressure distribution.',
         specs: {
         turbulence: 'k-ω SST',
@@ -47,6 +77,7 @@ const simulationsList = [
         category: 'Vehicle Aerodynamics',
         solver: 'pimpleFoam',
         year: '2024',
+        date: '12/2024',
         description: 'Flow simulation of a Formula SAE racecar to optimize aerodynamic balance and drag-to-lift ratio using transient PIMPLE coupling.',
         specs: {
         turbulence: 'k-ω SST',
@@ -69,14 +100,15 @@ const simulationsList = [
         title: 'Propeller Simulation',
         category: 'Aeroacoustics',
         solver: 'pimpleFoam',
-        year: '2025',
+        year: '2024',
+        date: '06/2024',
         description: 'Unsteady simulation of rotating propeller blades capturing wake interaction and thrust generation under realistic RPM conditions.',
         specs: {
         turbulence: 'LES (WALE)',
         },
         tags: ['LES', 'Rotation', 'Propulsion'],
         media: [
-        { type: 'video', src: '/OpenFoam/Propeller Simulation/VideoSpedUp.mp4' },
+        { type: 'video', src: '/OpenFoam/Propeller Simulation/VideoSpedUp2.mp4' },
         ],
         color: '#48cae4',
         learnings: [
@@ -91,14 +123,15 @@ const simulationsList = [
         category: 'Combustion',
         solver: 'reactingFoam',
         year: '2024',
+        date: '01/2024',
         description: 'Simplified combustion chamber simulation using detailed reaction mechanisms to predict flame propagation and heat release.',
         specs: {
         turbulence: 'LES (WALE)',
         },
         tags: ['Combustion', 'CHT', 'Energy'],
         media: [
-        { type: 'video', src: '/Openfoam/Engine Combustion/Engine Combustion CO2.mp4' },
-        { type: 'video', src: '/Openfoam/Engine Combustion/Engine Combustion CH4.mp4' },
+        { type: 'video', src: '/OpenFoam/Engine Combustion/Engine Combustion CO2.mp4' },
+        { type: 'video', src: '/OpenFoam/Engine Combustion/Engine Combustion CH4.mp4' },
         ],
         color: '#ff7b00',
         learnings: [
@@ -113,13 +146,14 @@ const simulationsList = [
         category: 'Wind Engineering',
         solver: 'simpleFoam',
         year: '2024',
+        date: '04/2025',
         description: 'Aerodynamic loading study on solar panels. RANS and transient PIMPLE simulations performed to determine optimal tilt-angle load characteristics.',
         specs: {
         turbulence: 'k-ε',
         },
         tags: ['Wind Load', 'ABL', 'Transient'],
         media: [
-        { type: 'video', src: '/Openfoam/SolarPanel/SolarPanelBig (1).mp4' },
+        { type: 'video', src: '/OpenFoam/SolarPanel/SolarPanelBig (2).mp4' },
         ],
         color: '#90e0ef',
         learnings: [
@@ -133,13 +167,12 @@ const simulationsList = [
         title: 'Stirred Tank Mixing',
         category: 'Multiphase Flow',
         solver: 'twoPhaseEulerFoam',
-        year: '2023',
+        year: '2024',
+        date: '02/2024',
         description: 'Multiphase mixing simulation in a stirred tank using the MRF approach to model impeller rotation. Captured gas–liquid interaction and evaluated mixing efficiency and flow patterns.',
         specs: {
         cells: '~2M',
         turbulence: 'mixture k-ε',
-        runtime: '36 hours',
-        cores: '8'
         },
         tags: ['Mixing', 'MRF', 'Gas-Liquid'],
         media: [
@@ -158,6 +191,7 @@ const simulationsList = [
         category: 'High-Speed Flow',
         solver: 'sonicFoam',
         year: '2025',
+        date: '06/2025',
         description: 'Supersonic flow simulation over a wedge-type airfoil capturing shock formation, expansion fans, and pressure distribution at Mach 2.0.',
         specs: {
         cells: '~2.8M',
@@ -183,6 +217,7 @@ const simulationsList = [
         category: 'High-Speed Flow',
         solver: 'sonicFoam',
         year: '2025',
+        date: '06/2025',
         description: 'Compressible flow past a sharp-edged prism generating oblique shock structures and expansion fans, analyzed for Mach 3 freestream.',
         specs: {
         cells: '~3.5M',
@@ -192,7 +227,7 @@ const simulationsList = [
         },
         tags: ['Mach Flow', 'Shock Wave', 'Compressible'],
         media: [
-        { type: 'video', src: '/openfoam/SupersonicPrism/U.mp4' },
+        { type: 'video', src: '/OpenFoam/SupersonicPrism/U.mp4' },
         ],
         color: '#023e8a',
         learnings: [
@@ -201,33 +236,6 @@ const simulationsList = [
         'Captured expansion fan dynamics'
         ]
     },
-    {
-        id: 10,
-        title: 'Water Droplet Impact',
-        category: 'Multiphase Flow',
-        solver: 'interIsoFoam',
-        year: '2025',
-        description: 'High-resolution simulation of a droplet impact event on a water surface capturing crown formation and secondary breakup dynamics.',
-        specs: {
-        cells: '~1.5M',
-        turbulence: 'LES',
-        runtime: '20 hours',
-        cores: '8'
-        },
-        tags: ['Impact', 'VOF', 'Splash'],
-        media: [
-        { type: 'video', src: '/OpenFoam/WaterDrop/vel 0 water.mp4' },
-        { type: 'video', src: '/OpenFoam/WaterDrop/vel 1 water.mp4' },
-        { type: 'video', src: '/OpenFoam/WaterDrop/vel 5 water.mp4' },
-        { type: 'video', src: '/OpenFoam/WaterDrop/vel 10 water.mp4' },
-        ],
-        color: '#00b4d8',
-        learnings: [
-        'Captured crown formation',
-        'Analyzed secondary breakup',
-        'High-resolution interface tracking'
-        ]
-    }
 ]
 
 export default simulationsList;
