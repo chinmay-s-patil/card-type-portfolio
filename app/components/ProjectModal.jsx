@@ -6,7 +6,6 @@ export default function ProjectModal({ project, onClose }) {
   const videoRefs = useRef([])
 
   useEffect(() => {
-    // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = 'unset'
@@ -14,7 +13,6 @@ export default function ProjectModal({ project, onClose }) {
   }, [])
 
   useEffect(() => {
-    // Escape key to close
     const handleEscape = (e) => {
       if (e.key === 'Escape') onClose()
     }
@@ -22,21 +20,36 @@ export default function ProjectModal({ project, onClose }) {
     return () => window.removeEventListener('keydown', handleEscape)
   }, [onClose])
 
-  // Autoplay current video when media changes
+  // Only manage local video playback
   useEffect(() => {
-    const currentVideo = videoRefs.current[currentMediaIndex]
-    if (currentVideo && project.media[currentMediaIndex]?.type === 'video') {
-      currentVideo.play().catch(err => console.log('Autoplay prevented:', err))
-    }
+    const currentMedia = project.media[currentMediaIndex]
     
-    // Pause all other videos
-    videoRefs.current.forEach((video, idx) => {
-      if (video && idx !== currentMediaIndex) {
+    // Pause all local videos
+    videoRefs.current.forEach((video) => {
+      if (video) {
         video.pause()
         video.currentTime = 0
       }
     })
+    
+    // Play current local video if it exists
+    const currentVideo = videoRefs.current[currentMediaIndex]
+    if (currentVideo && currentMedia?.type === 'video') {
+      currentVideo.play().catch(err => console.log('Autoplay prevented:', err))
+    }
   }, [currentMediaIndex, project.media])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      videoRefs.current.forEach((video) => {
+        if (video) {
+          video.pause()
+          video.currentTime = 0
+        }
+      })
+    }
+  }, [])
 
   if (!project) return null
 
@@ -49,6 +62,29 @@ export default function ProjectModal({ project, onClose }) {
   const prevMedia = () => {
     setCurrentMediaIndex((prev) => (prev - 1 + project.media.length) % project.media.length)
   }
+
+  // Helper function to convert YouTube URL to embed URL
+  const getYouTubeEmbedUrl = (url) => {
+    // Extract video ID from various YouTube URL formats
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=)([^&\s]+)/,           // youtube.com/watch?v=VIDEO_ID
+      /(?:youtube\.com\/embed\/)([^?\s]+)/,             // youtube.com/embed/VIDEO_ID
+      /(?:youtu\.be\/)([^?\s]+)/,                        // youtu.be/VIDEO_ID
+      /(?:youtube\.com\/v\/)([^?\s]+)/                   // youtube.com/v/VIDEO_ID
+    ]
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match && match[1]) {
+        return `https://www.youtube.com/embed/${match[1]}`
+      }
+    }
+    
+    // If no pattern matches, return the original URL (might already be an embed URL)
+    return url
+  }
+
+  const currentMedia = project.media?.[currentMediaIndex]
 
   return (
     <div
@@ -115,7 +151,7 @@ export default function ProjectModal({ project, onClose }) {
           className="hover:bg-[rgba(255,255,255,0.1)]"
           aria-label="Close modal"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path d="M18 6L6 18M6 6L18 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
@@ -169,7 +205,7 @@ export default function ProjectModal({ project, onClose }) {
                 fontSize: '0.95rem',
                 color: 'var(--muted)'
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                   <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
                   <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
@@ -220,7 +256,23 @@ export default function ProjectModal({ project, onClose }) {
                     pointerEvents: idx === currentMediaIndex ? 'auto' : 'none'
                   }}
                 >
-                  {item.type === 'video' ? (
+                  {/* YouTube Link (embedded) */}
+                  {item.type === 'link' && (
+                    <iframe
+                      src={getYouTubeEmbedUrl(item.src)}
+                      title={item.caption || project.title}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        border: 'none'
+                      }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  )}
+
+                  {/* Local Video */}
+                  {item.type === 'video' && (
                     <video
                       ref={el => videoRefs.current[idx] = el}
                       src={item.src}
@@ -233,7 +285,10 @@ export default function ProjectModal({ project, onClose }) {
                         objectFit: 'contain'
                       }}
                     />
-                  ) : (
+                  )}
+
+                  {/* Image */}
+                  {item.type === 'image' && (
                     <img
                       src={item.src}
                       alt={item.caption || project.title}
@@ -273,7 +328,7 @@ export default function ProjectModal({ project, onClose }) {
                     className="hover:bg-[rgba(255,255,255,0.2)]"
                     aria-label="Previous media"
                   >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                       <path d="M15 18L9 12L15 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </button>
@@ -301,7 +356,7 @@ export default function ProjectModal({ project, onClose }) {
                     className="hover:bg-[rgba(255,255,255,0.2)]"
                     aria-label="Next media"
                   >
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                       <path d="M9 18L15 12L9 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </button>
@@ -336,6 +391,25 @@ export default function ProjectModal({ project, onClose }) {
                     ))}
                   </div>
                 </>
+              )}
+
+              {/* Media Caption */}
+              {currentMedia?.caption && (
+                <div style={{
+                  position: 'absolute',
+                  top: '1rem',
+                  left: '1rem',
+                  padding: '0.5rem 1rem',
+                  background: 'rgba(0, 0, 0, 0.8)',
+                  backdropFilter: 'blur(8px)',
+                  borderRadius: '8px',
+                  fontSize: '0.85rem',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  zIndex: 10
+                }}>
+                  {currentMedia.caption}
+                </div>
               )}
             </div>
           )}
@@ -391,9 +465,9 @@ export default function ProjectModal({ project, onClose }) {
                       borderRadius: '12px',
                       transition: 'all 0.2s ease'
                     }}
-                    className="hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.12)]"
+                    className="hover:bg-[rgba(255,255,255,0.05)]"
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0, marginTop: '0.2rem' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: '0.2rem' }}>
                       <circle cx="12" cy="12" r="10" stroke="hsl(var(--accent))" strokeWidth="2"/>
                       <path d="M8 12l2 2 4-4" stroke="hsl(var(--accent))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
@@ -410,7 +484,7 @@ export default function ProjectModal({ project, onClose }) {
             </div>
           )}
 
-          {/* Tags */}
+          {/* Technologies */}
           {project.tags && project.tags.length > 0 && (
             <div style={{ marginBottom: '2rem' }}>
               <h3 style={{
@@ -439,7 +513,7 @@ export default function ProjectModal({ project, onClose }) {
                       color: 'rgba(255, 255, 255, 0.9)',
                       transition: 'all 0.2s ease'
                     }}
-                    className="hover:bg-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.15)]"
+                    className="hover:bg-[rgba(255,255,255,0.1)]"
                   >
                     {tag}
                   </span>
@@ -448,7 +522,7 @@ export default function ProjectModal({ project, onClose }) {
             </div>
           )}
 
-          {/* External Links */}
+          {/* Links */}
           {(project.links || project.href) && (
             <div style={{
               display: 'flex',
@@ -478,36 +552,11 @@ export default function ProjectModal({ project, onClose }) {
                   className="hover:opacity-90"
                 >
                   View Project
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 </a>
               )}
-              {project.links && project.links.map((link, i) => (
-                <a
-                  key={i}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.75rem 1.5rem',
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    color: '#fff',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '12px',
-                    fontWeight: '600',
-                    fontSize: '0.95rem',
-                    textDecoration: 'none',
-                    transition: 'all 0.2s ease'
-                  }}
-                  className="hover:bg-[rgba(255,255,255,0.1)]"
-                >
-                  {link.label}
-                </a>
-              ))}
             </div>
           )}
         </div>
@@ -530,7 +579,6 @@ export default function ProjectModal({ project, onClose }) {
           }
         }
 
-        /* Custom scrollbar styling */
         .modal-content-scroll::-webkit-scrollbar {
           width: 8px;
         }
@@ -543,18 +591,10 @@ export default function ProjectModal({ project, onClose }) {
         .modal-content-scroll::-webkit-scrollbar-thumb {
           background: linear-gradient(180deg, hsl(var(--accent)), rgba(140, 255, 200, 0.6));
           border-radius: 4px;
-          transition: background 0.3s ease;
         }
 
         .modal-content-scroll::-webkit-scrollbar-thumb:hover {
           background: hsl(var(--accent));
-          box-shadow: 0 0 8px hsl(var(--accent) / 0.5);
-        }
-
-        /* Firefox scrollbar */
-        .modal-content-scroll {
-          scrollbar-width: thin;
-          scrollbar-color: hsl(var(--accent)) rgba(255, 255, 255, 0.05);
         }
       `}</style>
     </div>
