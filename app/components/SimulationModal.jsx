@@ -61,7 +61,7 @@ export default function SimulationModal({ simulation, onClose }) {
     setCurrentMediaIndex((prev) => (prev - 1 + simulation.media.length) % simulation.media.length)
   }
 
-  // Helper function to convert YouTube URL to embed URL
+// Helper function to convert YouTube URL to embed URL with autoplay and loop
   const getYouTubeEmbedUrl = (url) => {
     // Extract video ID from various YouTube URL formats
     const patterns = [
@@ -74,7 +74,9 @@ export default function SimulationModal({ simulation, onClose }) {
     for (const pattern of patterns) {
       const match = url.match(pattern)
       if (match && match[1]) {
-        return `https://www.youtube.com/embed/${match[1]}`
+        const videoId = match[1]
+        // Add parameters: autoplay, loop, mute, no controls, playlist (required for loop)
+        return `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&mute=1&controls=0&playlist=${videoId}`
       }
     }
     
