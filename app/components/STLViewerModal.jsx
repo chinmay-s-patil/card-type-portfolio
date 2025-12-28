@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
-import Script from 'next/script'
 
 export default function STLViewerModal({ project, onClose }) {
   const containerRef = useRef(null)
@@ -28,6 +27,189 @@ export default function STLViewerModal({ project, onClose }) {
 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Load Three.js and STLLoader
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !window.THREE) {
+      console.log('Loading Three.js...')
+      // Load Three.js
+      const threeScript = document.createElement('script')
+      threeScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
+      threeScript.onload = () => {
+        console.log('Three.js loaded successfully')
+        // After Three.js loads, manually add STLLoader
+        if (window.THREE && !window.THREE.STLLoader) {
+          // STLLoader implementation
+          window.THREE.STLLoader = function () {
+            this.manager = window.THREE.DefaultLoadingManager
+          }
+          
+          window.THREE.STLLoader.prototype.load = function (url, onLoad, onProgress, onError) {
+            const scope = this
+            const loader = new window.THREE.FileLoader(this.manager)
+            loader.setPath(this.path)
+            loader.setResponseType('arraybuffer')
+            loader.setRequestHeader(this.requestHeader)
+            loader.setWithCredentials(this.withCredentials)
+            
+            loader.load(url, function (data) {
+              try {
+                // Ensure data is ArrayBuffer
+                if (!(data instanceof ArrayBuffer)) {
+                  // Convert to ArrayBuffer if it's not
+                  if (typeof data === 'string') {
+                    const encoder = new TextEncoder()
+                    data = encoder.encode(data).buffer
+                  } else if (data instanceof Uint8Array) {
+                    data = data.buffer
+                  } else {
+                    throw new Error('Invalid data type received')
+                  }
+                }
+                onLoad(scope.parse(data))
+              } catch (e) {
+                if (onError) {
+                  onError(e)
+                } else {
+                  console.error(e)
+                }
+                scope.manager.itemError(url)
+              }
+            }, onProgress, onError)
+          }
+          
+          window.THREE.STLLoader.prototype.parse = function (data) {
+            // Ensure we have an ArrayBuffer
+            let arrayBuffer
+            if (data instanceof ArrayBuffer) {
+              arrayBuffer = data
+            } else if (data.buffer && data.buffer instanceof ArrayBuffer) {
+              arrayBuffer = data.buffer
+            } else if (typeof data === 'string') {
+              // Convert string to ArrayBuffer
+              const encoder = new TextEncoder()
+              arrayBuffer = encoder.encode(data).buffer
+            } else {
+              throw new Error('Invalid data type: expected ArrayBuffer, Uint8Array, or String')
+            }
+            
+            function isBinary(buffer) {
+              const reader = new DataView(buffer)
+              const numFaces = reader.getUint32(80, true)
+              const faceSize = (32 / 8 * 3) + ((32 / 8 * 3) * 3) + (16 / 8)
+              const numExpectedBytes = 80 + (32 / 8) + (numFaces * faceSize)
+              return numExpectedBytes === reader.byteLength
+            }
+            
+            const binData = new Uint8Array(arrayBuffer)
+            const isBinaryFile = isBinary(arrayBuffer)
+            
+            return isBinaryFile ? parseBinary(binData) : parseASCII(ensureString(binData))
+          }
+          
+          function parseASCII(data) {
+            const geometry = new window.THREE.BufferGeometry()
+            const patternFace = /facet([\s\S]*?)endfacet/g
+            let faceCounter = 0
+            
+            let result
+            while ((result = patternFace.exec(data)) !== null) {
+              faceCounter++
+            }
+            
+            const vertices = new Float32Array(faceCounter * 3 * 3)
+            const normals = new Float32Array(faceCounter * 3 * 3)
+            
+            const patternNormal = /normal\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)/g
+            const patternVertex = /vertex\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)/g
+            
+            patternFace.lastIndex = 0
+            let vertexCounter = 0
+            
+            while ((result = patternFace.exec(data)) !== null) {
+              const text = result[0]
+              
+              patternNormal.lastIndex = 0
+              const normalResult = patternNormal.exec(text)
+              const normal = new window.THREE.Vector3(
+                parseFloat(normalResult[1]),
+                parseFloat(normalResult[3]),
+                parseFloat(normalResult[5])
+              )
+              
+              patternVertex.lastIndex = 0
+              while ((result = patternVertex.exec(text)) !== null) {
+                vertices[vertexCounter] = parseFloat(result[1])
+                vertices[vertexCounter + 1] = parseFloat(result[3])
+                vertices[vertexCounter + 2] = parseFloat(result[5])
+                
+                normals[vertexCounter] = normal.x
+                normals[vertexCounter + 1] = normal.y
+                normals[vertexCounter + 2] = normal.z
+                
+                vertexCounter += 3
+              }
+            }
+            
+            geometry.setAttribute('position', new window.THREE.BufferAttribute(vertices, 3))
+            geometry.setAttribute('normal', new window.THREE.BufferAttribute(normals, 3))
+            
+            return geometry
+          }
+          
+          function parseBinary(data) {
+            const reader = new DataView(data.buffer)
+            const faces = reader.getUint32(80, true)
+            
+            const geometry = new window.THREE.BufferGeometry()
+            const vertices = new Float32Array(faces * 3 * 3)
+            const normals = new Float32Array(faces * 3 * 3)
+            
+            for (let face = 0; face < faces; face++) {
+              const start = 84 + face * 50
+              
+              const normalX = reader.getFloat32(start, true)
+              const normalY = reader.getFloat32(start + 4, true)
+              const normalZ = reader.getFloat32(start + 8, true)
+              
+              for (let i = 1; i <= 3; i++) {
+                const vertexstart = start + i * 12
+                const componentIdx = (face * 3 * 3) + ((i - 1) * 3)
+                
+                vertices[componentIdx] = reader.getFloat32(vertexstart, true)
+                vertices[componentIdx + 1] = reader.getFloat32(vertexstart + 4, true)
+                vertices[componentIdx + 2] = reader.getFloat32(vertexstart + 8, true)
+                
+                normals[componentIdx] = normalX
+                normals[componentIdx + 1] = normalY
+                normals[componentIdx + 2] = normalZ
+              }
+            }
+            
+            geometry.setAttribute('position', new window.THREE.BufferAttribute(vertices, 3))
+            geometry.setAttribute('normal', new window.THREE.BufferAttribute(normals, 3))
+            
+            return geometry
+          }
+          
+          function ensureString(buffer) {
+            if (typeof buffer !== 'string') {
+              return new TextDecoder().decode(buffer)
+            }
+            return buffer
+          }
+        }
+        setThreeLoaded(true)
+      }
+      threeScript.onerror = () => {
+        console.error('Failed to load Three.js')
+        setError('Failed to load 3D viewer')
+      }
+      document.head.appendChild(threeScript)
+    } else if (window.THREE) {
+      setThreeLoaded(true)
+    }
+  }, [])
 
   useEffect(() => {
     if (!containerRef.current || !threeLoaded || !window.THREE) return
@@ -112,7 +294,9 @@ export default function STLViewerModal({ project, onClose }) {
       },
       (error) => {
         console.error('Error loading STL:', error)
-        setError('Model file not found')
+        console.error('Attempted to load:', project.stlFile)
+        console.error('Full URL:', window.location.origin + project.stlFile)
+        setError(`Failed to load: ${project.stlFile}`)
         setIsLoading(false)
         setShowUnavailablePopup(true)
       }
@@ -267,12 +451,6 @@ export default function STLViewerModal({ project, onClose }) {
 
   return (
     <>
-      <Script
-        src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
-        onLoad={() => setThreeLoaded(true)}
-        strategy="lazyOnload"
-      />
-      
       {/* Unavailable Popup */}
       {showUnavailablePopup && (
         <div
@@ -342,10 +520,34 @@ export default function STLViewerModal({ project, onClose }) {
               color: 'rgba(255, 255, 255, 0.8)',
               marginBottom: '1.5rem'
             }}>
-              This 3D model is currently unavailable. As a student who transitioned between institutions, 
-              I temporarily lack access to the software licenses required to export and showcase these models. 
-              I'm working to restore access to provide you with the full interactive experience.
+              Failed to load the 3D model file. Please check:
             </p>
+
+            <div style={{
+              background: 'rgba(0, 0, 0, 0.3)',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginBottom: '1.5rem',
+              textAlign: 'left',
+              fontFamily: 'monospace',
+              fontSize: '0.85rem',
+              color: 'rgba(255, 100, 100, 0.9)',
+              wordBreak: 'break-all'
+            }}>
+              Path: {project.stlFile}
+            </div>
+
+            <ul style={{
+              textAlign: 'left',
+              fontSize: '0.9rem',
+              color: 'rgba(255, 255, 255, 0.7)',
+              marginBottom: '1.5rem',
+              paddingLeft: '1.5rem'
+            }}>
+              <li>File exists in the correct folder</li>
+              <li>Filename matches exactly (case-sensitive)</li>
+              <li>File extension is correct (.stl or .STL)</li>
+            </ul>
 
             {/* Button */}
             <button
