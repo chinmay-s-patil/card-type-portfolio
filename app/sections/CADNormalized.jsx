@@ -1,3 +1,5 @@
+
+
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -29,7 +31,7 @@ export default function CADNormalized() {
     return () => window.removeEventListener('resize', calculateScale)
   }, [])
 
-  const projects = cadProjectsList
+  const projects = CADList
   const totalPages = Math.ceil(projects.length / PROJECTS_PER_PAGE)
 
   // Scroll detection
