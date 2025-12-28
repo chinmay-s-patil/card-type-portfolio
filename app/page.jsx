@@ -9,6 +9,8 @@ import OpenFOAMNormalized from './sections/OpenFOAMNormalized'
 import EventsNormalized from './sections/EventsNormalized'
 import Footer from './components/Footer'
 import MobileWarning from './components/MobileWarning'
+import CADNormalized from './sections/CADNormalized'
+
 
 const sectionsMeta = [
   { id: 'landing', label: 'Landing' },
@@ -17,6 +19,7 @@ const sectionsMeta = [
   { id: 'skills', label: 'Skills' },
   { id: 'projects', label: 'Projects' },
   { id: 'openfoam', label: 'OpenFOAM' },
+  { id: 'cad', label: 'CAD' },
   { id: 'events', label: 'Events' },
 ]
 
@@ -50,6 +53,10 @@ export default function Page() {
         
         <section id="openfoam" className="section">
           <OpenFOAMNormalized />
+        </section>
+
+        <section id="cad" className="section">
+          <CADNormalized />
         </section>
         
         <section id="events" className="section">
