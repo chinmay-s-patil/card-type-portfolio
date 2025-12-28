@@ -10,6 +10,7 @@ export default function STLViewerModal({ project, onClose }) {
   const meshRef = useRef(null)
   const animationFrameRef = useRef(null)
   const [threeLoaded, setThreeLoaded] = useState(false)
+  const [showUnavailablePopup, setShowUnavailablePopup] = useState(false)
   
   // Camera controls state
   const controlsRef = useRef({
@@ -111,8 +112,9 @@ export default function STLViewerModal({ project, onClose }) {
       },
       (error) => {
         console.error('Error loading STL:', error)
-        setError('Failed to load 3D model')
+        setError('Model file not found')
         setIsLoading(false)
+        setShowUnavailablePopup(true)
       }
     )
 
@@ -157,7 +159,6 @@ export default function STLViewerModal({ project, onClose }) {
     }
   }, [project, threeLoaded])
 
-  // Rest of your component code (mouse/touch handlers, etc.) stays the same...
   const handleMouseDown = (e) => {
     e.preventDefault()
     if (e.button === 0) {
@@ -255,6 +256,13 @@ export default function STLViewerModal({ project, onClose }) {
     controlsRef.current.zoom = 5
   }
 
+  const handleDownload = () => {
+    const link = window.document.createElement('a')
+    link.href = project.stlFile
+    link.download = project.title || 'model.stl'
+    link.click()
+  }
+
   if (!project) return null
 
   return (
@@ -265,43 +273,386 @@ export default function STLViewerModal({ project, onClose }) {
         strategy="lazyOnload"
       />
       
-      {/* Your existing modal JSX stays the same */}
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          animation: 'fadeIn 0.3s ease'
-        }}
-        onClick={onClose}
-      >
-        {/* Rest of your modal content... */}
-        {/* (Keep all your existing modal structure) */}
-      </div>
+      {/* Unavailable Popup */}
+      {showUnavailablePopup && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 200,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            animation: 'fadeIn 0.3s ease'
+          }}
+          onClick={() => {
+            setShowUnavailablePopup(false)
+            onClose()
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '500px',
+              width: '90%',
+              background: 'linear-gradient(135deg, rgba(15, 20, 32, 0.98), rgba(10, 14, 26, 0.98))',
+              borderRadius: '20px',
+              border: '2px solid rgba(255, 100, 100, 0.5)',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
+              padding: '2rem',
+              animation: 'slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              textAlign: 'center'
+            }}
+          >
+            {/* Icon */}
+            <div style={{
+              width: '80px',
+              height: '80px',
+              margin: '0 auto 1.5rem',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, rgba(255, 100, 100, 0.2), rgba(255, 100, 100, 0.05))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255, 100, 100, 0.9)" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </div>
 
-      {/* Your existing styles */}
+            {/* Title */}
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: '700',
+              marginBottom: '1rem',
+              color: '#fff',
+              lineHeight: '1.2'
+            }}>
+              Model Unavailable
+            </h2>
+
+            {/* Message */}
+            <p style={{
+              fontSize: '1rem',
+              lineHeight: '1.6',
+              color: 'rgba(255, 255, 255, 0.8)',
+              marginBottom: '1.5rem'
+            }}>
+              This 3D model is currently unavailable. As a student who transitioned between institutions, 
+              I temporarily lack access to the software licenses required to export and showcase these models. 
+              I'm working to restore access to provide you with the full interactive experience.
+            </p>
+
+            {/* Button */}
+            <button
+              onClick={() => {
+                setShowUnavailablePopup(false)
+                onClose()
+              }}
+              style={{
+                padding: '0.875rem 2rem',
+                background: 'linear-gradient(135deg, rgba(255, 100, 100, 0.8), rgba(255, 100, 100, 0.6))',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                width: '100%'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.transform = 'translateY(-2px)'
+                e.target.style.boxShadow = '0 6px 16px rgba(255, 100, 100, 0.4)'
+              }}
+              onMouseOut={(e) => {
+                e.target.style.transform = 'translateY(0)'
+                e.target.style.boxShadow = 'none'
+              }}
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Main STL Viewer */}
+      {!showUnavailablePopup && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            animation: 'fadeIn 0.3s ease'
+          }}
+          onClick={onClose}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          {/* Backdrop */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.95)',
+              backdropFilter: 'blur(8px)'
+            }}
+          />
+
+          {/* Control Panel - Top */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute',
+              top: '2rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: '0.5rem',
+              background: 'rgba(0, 0, 0, 0.8)',
+              backdropFilter: 'blur(12px)',
+              padding: '0.75rem 1rem',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              zIndex: 10,
+              animation: 'slideDown 0.4s ease'
+            }}
+          >
+            {/* Document Name */}
+            <div style={{
+              padding: '0 1rem',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              color: '#fff',
+              borderRight: '1px solid rgba(255, 255, 255, 0.2)',
+              maxWidth: '300px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}>
+              {project.title || 'CAD Model'}
+            </div>
+
+            {/* Reset View */}
+            <button
+              onClick={resetView}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease'
+              }}
+              className="control-button"
+              title="Reset View"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12Z" stroke="white" strokeWidth="2"/>
+                <path d="M12 7V12L15 15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </button>
+
+            {/* Divider */}
+            <div style={{
+              width: '1px',
+              height: '40px',
+              background: 'rgba(255, 255, 255, 0.2)',
+              margin: '0 0.25rem'
+            }} />
+
+            {/* Download Button */}
+            <button
+              onClick={handleDownload}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease'
+              }}
+              className="control-button"
+              title="Download"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M7 10L12 15L17 10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* Close Button - Top Right */}
+          <button
+            onClick={onClose}
+            style={{
+              position: 'absolute',
+              top: '2rem',
+              right: '2rem',
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              background: 'rgba(0, 0, 0, 0.8)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
+              zIndex: 10,
+              animation: 'slideDown 0.4s ease'
+            }}
+            className="control-button"
+            title="Close (Esc)"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6L18 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          {/* Document Content */}
+          <div
+            ref={containerRef}
+            onClick={(e) => e.stopPropagation()}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onContextMenu={handleContextMenu}
+            style={{
+              position: 'relative',
+              width: '90%',
+              height: '90%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              cursor: controlsRef.current.isRotating || controlsRef.current.isPanning ? 'grabbing' : 'grab',
+              userSelect: 'none'
+            }}
+          >
+            {isLoading && !error && (
+              <div style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.2rem',
+                color: '#fff'
+              }}>
+                Loading 3D model...
+              </div>
+            )}
+          </div>
+
+          {/* Help Text - Bottom */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '2rem',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: 'rgba(0, 0, 0, 0.8)',
+              backdropFilter: 'blur(12px)',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '12px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              fontSize: '0.85rem',
+              color: 'rgba(255, 255, 255, 0.7)',
+              display: 'flex',
+              gap: '2rem',
+              animation: 'slideUp 0.4s ease',
+              zIndex: 10
+            }}
+          >
+            <span>
+              <kbd style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '0.8rem'
+              }}>Drag</kbd> to rotate
+            </span>
+            <span>
+              <kbd style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '0.8rem'
+              }}>Scroll</kbd> to zoom
+            </span>
+            <span>
+              <kbd style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+                fontSize: '0.8rem'
+              }}>Right-click</kbd> to pan
+            </span>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
 
-        @keyframes slideUp {
+        @keyframes slideDown {
           from {
             opacity: 0;
-            transform: translateY(40px);
+            transform: translateX(-50%) translateY(-20px);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateX(-50%) translateY(0);
           }
         }
 
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+
+        .control-button:not(:disabled):hover {
+          background: rgba(255, 255, 255, 0.2) !important;
+          transform: scale(1.05);
+        }
+
+        .control-button:not(:disabled):active {
+          transform: scale(0.95);
         }
       `}</style>
     </>
