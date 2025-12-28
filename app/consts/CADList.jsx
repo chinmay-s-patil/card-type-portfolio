@@ -13,6 +13,18 @@ const CADList = [
   },
   {
     id: 2,
+    title: 'Aerofoil',
+    category: 'Product Design',
+    year: '2022',
+    date: '02/2022',
+    description: 'Detailed CAD model of an acoustic guitar featuring advanced surface modeling techniques, assembly design, and precise component integration. Demonstrates proficiency in organic shape modeling and engineering visualization.',
+    coverPhoto: '/CAD/Untitled.JPG',
+    stlFile: '/CAD/airfoil.STL', // You'll need to add your STL files here
+    tags: ['SolidWorks', 'Surface Modeling', 'Product Design', 'Assembly'],
+    color: '#ff6b35'
+  },
+  {
+    id: 3,
     title: 'Wind Tunnel Test Section',
     category: 'Experimental Equipment',
     year: '2024',
@@ -24,7 +36,7 @@ const CADList = [
     color: '#4ecdc4'
   },
   {
-    id: 3,
+    id: 4,
     title: 'Solar Vortex Engine',
     category: 'Energy Systems',
     year: '2024',
@@ -36,7 +48,7 @@ const CADList = [
     color: '#ffbe0b'
   },
   {
-    id: 4,
+    id: 5,
     title: 'S500 Drone Frame',
     category: 'Reverse Engineering',
     year: '2024',
