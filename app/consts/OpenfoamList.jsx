@@ -62,7 +62,7 @@ const simulationsList = [
         },
         tags: ['CFD', 'Aerodynamics', 'Motorsport'],
         media: [
-        { type: 'video', src: '/OpenFoam/F1/F1.mp4' },
+        { type: 'link', src: 'https://youtu.be/vVOOHMz5rOc' },
         ],
         color: '#ff006e',
         learnings: [
@@ -84,9 +84,8 @@ const simulationsList = [
         },
         tags: ['FSAE', 'Transient', 'Vehicle'],
         media: [
-        { type: 'video', src: '/OpenFoam/FSAE Car Sim/DES-video-with-car-slower-fixed-Perspective-Q-Criterion.mp4' },
-        { type: 'video', src: '/OpenFoam/FSAE Car Sim/LES-video-with-car-slower-fixed-perspective-Q-Criterion.mp4' },
-        { type: 'video', src: '/OpenFoam/FSAE Car Sim/LES-With_VOR-Q-crit-4 Slowed.mp4' }
+        { type: 'link', src: 'https://youtu.be/iIikI_LeR7M' },
+        { type: 'link', src: 'https://youtu.be/rgmIqWjOfpo' },
         ],
         color: '#00b4d8',
         learnings: [
@@ -108,7 +107,7 @@ const simulationsList = [
         },
         tags: ['LES', 'Rotation', 'Propulsion'],
         media: [
-        { type: 'video', src: '/OpenFoam/Propeller Simulation/VideoSpedUp2.mp4' },
+        { type: 'link', src: 'https://youtu.be/kKAqOmWSgqs' },
         ],
         color: '#48cae4',
         learnings: [
@@ -130,8 +129,8 @@ const simulationsList = [
         },
         tags: ['Combustion', 'CHT', 'Energy'],
         media: [
-        { type: 'video', src: '/OpenFoam/Engine Combustion/Engine Combustion CO2.mp4' },
-        { type: 'video', src: '/OpenFoam/Engine Combustion/Engine Combustion CH4.mp4' },
+        { type: 'link', src: 'https://youtu.be/Qj1gQxWN9jg' },
+        { type: 'link', src: 'https://youtu.be/BPjKMzl3rFM' },
         ],
         color: '#ff7b00',
         learnings: [
