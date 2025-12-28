@@ -1,5 +1,3 @@
-
-
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -250,12 +248,10 @@ export default function CADNormalized() {
                     .map((project) => (
                       <div
                         key={project.id}
-                        onClick={() => openProject(project)}
                         style={{
                           position: 'relative',
                           borderRadius: '20px',
                           overflow: 'hidden',
-                          cursor: 'pointer',
                           background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
                           border: '2px solid rgba(255, 255, 255, 0.1)',
                           transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -335,34 +331,6 @@ export default function CADNormalized() {
                           }}>
                             {project.year}
                           </div>
-
-                          {/* View 3D Label */}
-                          <div style={{
-                            position: 'absolute',
-                            bottom: '16px',
-                            left: '50%',
-                            transform: 'translateX(-50%) translateY(10px)',
-                            padding: '10px 20px',
-                            background: project.color,
-                            color: '#0a0e1a',
-                            borderRadius: '10px',
-                            fontSize: '14px',
-                            fontWeight: '700',
-                            opacity: 0,
-                            transition: 'all 0.4s ease',
-                            boxShadow: `0 4px 16px ${project.color}60`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px'
-                          }}
-                          className="view-3d-label"
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2"/>
-                              <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                            </svg>
-                            View in 3D
-                          </div>
                         </div>
 
                         {/* Content */}
@@ -411,7 +379,8 @@ export default function CADNormalized() {
                           <div style={{
                             display: 'flex',
                             flexWrap: 'wrap',
-                            gap: '8px'
+                            gap: '8px',
+                            marginBottom: '16px'
                           }}>
                             {project.tags.slice(0, 3).map((tag, i) => (
                               <span
@@ -430,6 +399,36 @@ export default function CADNormalized() {
                               </span>
                             ))}
                           </div>
+
+                          {/* View 3D Button */}
+                          <button
+                            onClick={() => openProject(project)}
+                            style={{
+                              width: '100%',
+                              padding: '12px 20px',
+                              borderRadius: '10px',
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              background: `linear-gradient(135deg, ${project.color}, ${project.color}90)`,
+                              color: '#0a0e1a',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                              transition: 'all 0.2s ease',
+                              boxShadow: `0 4px 12px ${project.color}40`
+                            }}
+                            className="view-3d-button"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            View in 3D
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -466,9 +465,14 @@ export default function CADNormalized() {
           opacity: 1;
         }
 
-        .cad-card:hover .view-3d-label {
-          opacity: 1;
-          transform: translateX(-50%) translateY(0);
+        .view-3d-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+          opacity: 0.9;
+        }
+
+        .view-3d-button:active {
+          transform: translateY(0);
         }
 
         button:not(:disabled):hover {
