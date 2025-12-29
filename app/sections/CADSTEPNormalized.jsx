@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import STEPViewerModal from '../components/STEPViewerModal'
-import CADList from '../consts/CADList'
+import CADList from '../consts/CADSTEPList'
 
 export default function CADNormalized() {
   const [selectedProject, setSelectedProject] = useState(null)
