@@ -50,27 +50,46 @@ export default function STEPViewerModal({ project, onClose }) {
     }
 
     setLoadingProgress(10)
+    
+    // Load as ES module
     const script = document.createElement('script')
-    script.src = 'https://raw.githubusercontent.com/donalffons/opencascade.js/2.0.0-beta.4fa3125/dist/opencascade.wasm.js'
-    script.onload = async () => {
-      try {
-        setLoadingProgress(30)
-        const OCC = await window.opencascade({
-            locateFile: () => 'https://raw.githubusercontent.com/donalffons/opencascade.js/2.0.0-beta.4fa3125/dist/opencascade.wasm.wasm'
-        })
-        window.occt = OCC
-        setLoadingProgress(50)
-        setOcctReady(true)
-      } catch (err) {
-        console.error('OpenCascade init error:', err)
-        setError('CAD parser initialization failed')
-        setShowPopup(true)
-      }
+    script.type = 'module'
+    script.textContent = `
+      import opencascadeInit from '/opencascade/opencascade.js';
+      
+      opencascadeInit({
+        locateFile: (file) => '/opencascade/' + file
+      }).then((occt) => {
+        window.occt = occt;
+        window.dispatchEvent(new Event('opencascade-loaded'));
+      }).catch((err) => {
+        console.error('OpenCascade init error:', err);
+        window.dispatchEvent(new CustomEvent('opencascade-error', { detail: err }));
+      });
+    `
+    
+    const handleLoaded = () => {
+      setLoadingProgress(50)
+      setOcctReady(true)
+      cleanup()
     }
-    script.onerror = () => {
-      setError('Could not load CAD parser library')
+    
+    const handleError = (e) => {
+      console.error('OpenCascade error:', e.detail)
+      setError('CAD parser initialization failed')
       setShowPopup(true)
+      cleanup()
     }
+    
+    const cleanup = () => {
+      window.removeEventListener('opencascade-loaded', handleLoaded)
+      window.removeEventListener('opencascade-error', handleError)
+    }
+    
+    window.addEventListener('opencascade-loaded', handleLoaded)
+    window.addEventListener('opencascade-error', handleError)
+    
+    setLoadingProgress(30)
     document.head.appendChild(script)
   }
 
@@ -166,12 +185,33 @@ export default function STEPViewerModal({ project, onClose }) {
       const occt = window.occt
       const fileBuffer = new Uint8Array(buffer)
       
-      // Write to virtual filesystem
-      occt.FS.createDataFile('/', 'model.step', fileBuffer, true, true, true)
+      // Ensure working directory exists
+      try {
+        occt.FS.mkdir('/working')
+      } catch (e) {
+        // Directory might already exist
+      }
       
-      // Read STEP file
-      const reader = new occt.STEPControl_Reader_1()
-      reader.ReadFile('model.step')
+      const filename = '/working/model.step'
+      
+      // Remove file if it exists
+      try {
+        occt.FS.unlink(filename)
+      } catch (e) {
+        // File doesn't exist yet
+      }
+      
+      // Write to virtual filesystem
+      occt.FS.writeFile(filename, fileBuffer)
+      
+      // Read STEP file - correct constructor name
+      const reader = new occt.STEPControl_Reader()
+      const status = reader.ReadFile(filename)
+      
+      if (status !== occt.IFSelect_RetDone) {
+        throw new Error('Failed to read STEP file - status: ' + status)
+      }
+      
       reader.TransferRoots()
       const shape = reader.OneShape()
       
@@ -182,10 +222,14 @@ export default function STEPViewerModal({ project, onClose }) {
       finishMesh(mesh)
       
       // Cleanup
-      occt.FS.unlink('/model.step')
+      try {
+        occt.FS.unlink(filename)
+      } catch (e) {
+        // Ignore cleanup errors
+      }
     } catch (err) {
       console.error('STEP load error:', err)
-      setError('STEP file could not be loaded')
+      setError('STEP file could not be loaded: ' + err.message)
       setIsLoading(false)
       setShowPopup(true)
     }
