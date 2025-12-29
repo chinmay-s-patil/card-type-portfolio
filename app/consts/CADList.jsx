@@ -7,7 +7,7 @@ const CADList = [
     date: '02/2022',
     description: 'Detailed CAD model of an acoustic guitar featuring advanced surface modeling techniques, assembly design, and precise component integration. Demonstrates proficiency in organic shape modeling and engineering visualization.',
     coverPhoto: '/Projects/Guitar Design Project/Guitar Design Project (1).jpg',
-    stlFile: '/CAD/guitar.stl', // You'll need to add your STL files here
+    stlFile: '/CAD/Guitar/Guitar.IGS',
     tags: ['SolidWorks', 'Surface Modeling', 'Product Design', 'Assembly'],
     color: '#ff6b35'
   },
@@ -18,8 +18,8 @@ const CADList = [
     year: '2022',
     date: '02/2022',
     description: 'Detailed CAD model of an acoustic guitar featuring advanced surface modeling techniques, assembly design, and precise component integration. Demonstrates proficiency in organic shape modeling and engineering visualization.',
-    coverPhoto: '/CAD/Untitled.JPG',
-    stlFile: '/CAD/airofoil.STL', // You'll need to add your STL files here
+    coverPhoto: '/CAD/Airofoil/Airofoil.JPG',
+    stlFile: '/CAD/Airofoil/Airofoil.STL', // You'll need to add your STL files here
     tags: ['SolidWorks', 'Surface Modeling', 'Product Design', 'Assembly'],
     color: '#ff6b35'
   },

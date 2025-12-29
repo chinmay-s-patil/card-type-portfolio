@@ -261,11 +261,11 @@ export default function CADNormalized() {
                         }}
                         className="cad-card"
                       >
-                        {/* Image Container with Overlay */}
+                        {/* Image Container with Overlay - LARGER */}
                         <div style={{
                           position: 'relative',
                           width: '100%',
-                          height: '240px',
+                          height: '380px',
                           overflow: 'hidden',
                           background: '#000'
                         }}>
@@ -320,11 +320,11 @@ export default function CADNormalized() {
                             position: 'absolute',
                             top: '16px',
                             left: '16px',
-                            padding: '6px 12px',
+                            padding: '8px 16px',
                             background: 'rgba(0, 0, 0, 0.8)',
                             backdropFilter: 'blur(8px)',
                             borderRadius: '8px',
-                            fontSize: '14px',
+                            fontSize: '16px',
                             fontWeight: '700',
                             color: project.color,
                             border: `1px solid ${project.color}40`
@@ -335,24 +335,13 @@ export default function CADNormalized() {
 
                         {/* Content */}
                         <div style={{ 
-                          padding: '20px 24px',
+                          padding: '24px',
                           flex: 1,
                           display: 'flex',
                           flexDirection: 'column'
                         }}>
-                          <div style={{
-                            fontSize: '12px',
-                            color: project.color,
-                            fontWeight: '600',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            marginBottom: '8px'
-                          }}>
-                            {project.category}
-                          </div>
-
                           <h3 style={{
-                            fontSize: '20px',
+                            fontSize: '22px',
                             fontWeight: '700',
                             marginBottom: '12px',
                             color: '#fff',
@@ -368,7 +357,7 @@ export default function CADNormalized() {
                             marginBottom: '16px',
                             flex: 1,
                             display: '-webkit-box',
-                            WebkitLineClamp: 3,
+                            WebkitLineClamp: 2,
                             WebkitBoxOrient: 'vertical',
                             overflow: 'hidden'
                           }}>

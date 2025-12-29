@@ -22,7 +22,8 @@ export default function STLViewerModal({ project, onClose }) {
     panX: 0,
     panY: 0,
     zoom: 5,
-    touches: []
+    touches: [],
+    viewState: { x: 0, y: 0, z: 0 } // 0 = +axis, 1 = -axis
   })
 
   const [isLoading, setIsLoading] = useState(true)
@@ -32,14 +33,11 @@ export default function STLViewerModal({ project, onClose }) {
   useEffect(() => {
     if (typeof window !== 'undefined' && !window.THREE) {
       console.log('Loading Three.js...')
-      // Load Three.js
       const threeScript = document.createElement('script')
       threeScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
       threeScript.onload = () => {
         console.log('Three.js loaded successfully')
-        // After Three.js loads, manually add STLLoader
         if (window.THREE && !window.THREE.STLLoader) {
-          // STLLoader implementation
           window.THREE.STLLoader = function () {
             this.manager = window.THREE.DefaultLoadingManager
           }
@@ -54,9 +52,7 @@ export default function STLViewerModal({ project, onClose }) {
             
             loader.load(url, function (data) {
               try {
-                // Ensure data is ArrayBuffer
                 if (!(data instanceof ArrayBuffer)) {
-                  // Convert to ArrayBuffer if it's not
                   if (typeof data === 'string') {
                     const encoder = new TextEncoder()
                     data = encoder.encode(data).buffer
@@ -79,14 +75,12 @@ export default function STLViewerModal({ project, onClose }) {
           }
           
           window.THREE.STLLoader.prototype.parse = function (data) {
-            // Ensure we have an ArrayBuffer
             let arrayBuffer
             if (data instanceof ArrayBuffer) {
               arrayBuffer = data
             } else if (data.buffer && data.buffer instanceof ArrayBuffer) {
               arrayBuffer = data.buffer
             } else if (typeof data === 'string') {
-              // Convert string to ArrayBuffer
               const encoder = new TextEncoder()
               arrayBuffer = encoder.encode(data).buffer
             } else {
@@ -216,15 +210,12 @@ export default function STLViewerModal({ project, onClose }) {
 
     const THREE = window.THREE
 
-    // Disable body scroll
     document.body.style.overflow = 'hidden'
 
-    // Scene setup
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(0x0a0e1a)
     sceneRef.current = scene
 
-    // Camera setup
     const camera = new THREE.PerspectiveCamera(
       45,
       containerRef.current.clientWidth / containerRef.current.clientHeight,
@@ -234,14 +225,12 @@ export default function STLViewerModal({ project, onClose }) {
     camera.position.z = 5
     cameraRef.current = camera
 
-    // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true })
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight)
     renderer.setPixelRatio(window.devicePixelRatio)
     containerRef.current.appendChild(renderer.domElement)
     rendererRef.current = renderer
 
-    // Lights
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
     scene.add(ambientLight)
 
@@ -253,29 +242,24 @@ export default function STLViewerModal({ project, onClose }) {
     directionalLight2.position.set(-5, -5, -5)
     scene.add(directionalLight2)
 
-    // Grid helper
     const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222)
     scene.add(gridHelper)
 
-    // Load STL
     const loader = new THREE.STLLoader()
     loader.load(
       project.stlFile,
       (geometry) => {
-        // Center geometry
         geometry.computeBoundingBox()
         const center = new THREE.Vector3()
         geometry.boundingBox.getCenter(center)
         geometry.translate(-center.x, -center.y, -center.z)
 
-        // Scale to fit
         const size = new THREE.Vector3()
         geometry.boundingBox.getSize(size)
         const maxDim = Math.max(size.x, size.y, size.z)
         const scale = 2 / maxDim
         geometry.scale(scale, scale, scale)
 
-        // Create material with color from project
         const material = new THREE.MeshPhongMaterial({
           color: new THREE.Color(project.color),
           specular: 0x111111,
@@ -294,31 +278,27 @@ export default function STLViewerModal({ project, onClose }) {
       },
       (error) => {
         console.error('Error loading STL:', error)
-        console.error('Attempted to load:', project.stlFile)
-        console.error('Full URL:', window.location.origin + project.stlFile)
         setError(`Failed to load: ${project.stlFile}`)
         setIsLoading(false)
         setShowUnavailablePopup(true)
       }
     )
 
-    // Animation loop
     const animate = () => {
       animationFrameRef.current = requestAnimationFrame(animate)
 
       if (meshRef.current) {
         meshRef.current.rotation.x = controlsRef.current.rotationX
         meshRef.current.rotation.y = controlsRef.current.rotationY
-        meshRef.current.position.x = controlsRef.current.panX
-        meshRef.current.position.y = controlsRef.current.panY
       }
 
+      camera.position.x = controlsRef.current.panX
+      camera.position.y = controlsRef.current.panY
       camera.position.z = controlsRef.current.zoom
       renderer.render(scene, camera)
     }
     animate()
 
-    // Handle window resize
     const handleResize = () => {
       if (!containerRef.current) return
       camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight
@@ -327,7 +307,6 @@ export default function STLViewerModal({ project, onClose }) {
     }
     window.addEventListener('resize', handleResize)
 
-    // Cleanup
     return () => {
       document.body.style.overflow = 'unset'
       window.removeEventListener('resize', handleResize)
@@ -438,6 +417,59 @@ export default function STLViewerModal({ project, onClose }) {
     controlsRef.current.panX = 0
     controlsRef.current.panY = 0
     controlsRef.current.zoom = 5
+    controlsRef.current.viewState = { x: 0, y: 0, z: 0 }
+  }
+
+  // Axis view functions
+  const setViewX = () => {
+    const currentState = controlsRef.current.viewState.x
+    if (currentState === 0) {
+      // +X view (looking down X axis)
+      controlsRef.current.rotationX = 0
+      controlsRef.current.rotationY = Math.PI / 2
+      controlsRef.current.viewState.x = 1
+    } else {
+      // -X view
+      controlsRef.current.rotationX = 0
+      controlsRef.current.rotationY = -Math.PI / 2
+      controlsRef.current.viewState.x = 0
+    }
+    controlsRef.current.panX = 0
+    controlsRef.current.panY = 0
+  }
+
+  const setViewY = () => {
+    const currentState = controlsRef.current.viewState.y
+    if (currentState === 0) {
+      // +Y view (looking down Y axis)
+      controlsRef.current.rotationX = -Math.PI / 2
+      controlsRef.current.rotationY = 0
+      controlsRef.current.viewState.y = 1
+    } else {
+      // -Y view
+      controlsRef.current.rotationX = Math.PI / 2
+      controlsRef.current.rotationY = 0
+      controlsRef.current.viewState.y = 0
+    }
+    controlsRef.current.panX = 0
+    controlsRef.current.panY = 0
+  }
+
+  const setViewZ = () => {
+    const currentState = controlsRef.current.viewState.z
+    if (currentState === 0) {
+      // +Z view (front view)
+      controlsRef.current.rotationX = 0
+      controlsRef.current.rotationY = 0
+      controlsRef.current.viewState.z = 1
+    } else {
+      // -Z view (back view)
+      controlsRef.current.rotationX = 0
+      controlsRef.current.rotationY = Math.PI
+      controlsRef.current.viewState.z = 0
+    }
+    controlsRef.current.panX = 0
+    controlsRef.current.panY = 0
   }
 
   const handleDownload = () => {
@@ -518,36 +550,14 @@ export default function STLViewerModal({ project, onClose }) {
               fontSize: '1rem',
               lineHeight: '1.6',
               color: 'rgba(255, 255, 255, 0.8)',
-              marginBottom: '1.5rem'
+              marginBottom: '1.5rem',
+              textAlign: 'center',
+              padding: '0 1rem'
             }}>
-              Failed to load the 3D model file. Please check:
+              This 3D model is currently unavailable. As a student who transitioned between institutions,
+              I temporarily lack access to the software licenses required to export and showcase these models.
+              I'm working to restore access to provide you with the full interactive experience.
             </p>
-
-            <div style={{
-              background: 'rgba(0, 0, 0, 0.3)',
-              padding: '1rem',
-              borderRadius: '8px',
-              marginBottom: '1.5rem',
-              textAlign: 'left',
-              fontFamily: 'monospace',
-              fontSize: '0.85rem',
-              color: 'rgba(255, 100, 100, 0.9)',
-              wordBreak: 'break-all'
-            }}>
-              Path: {project.stlFile}
-            </div>
-
-            <ul style={{
-              textAlign: 'left',
-              fontSize: '0.9rem',
-              color: 'rgba(255, 255, 255, 0.7)',
-              marginBottom: '1.5rem',
-              paddingLeft: '1.5rem'
-            }}>
-              <li>File exists in the correct folder</li>
-              <li>Filename matches exactly (case-sensitive)</li>
-              <li>File extension is correct (.stl or .STL)</li>
-            </ul>
 
             {/* Button */}
             <button
@@ -644,6 +654,84 @@ export default function STLViewerModal({ project, onClose }) {
             }}>
               {project.title || 'CAD Model'}
             </div>
+
+            {/* Axis View Buttons */}
+            <button
+              onClick={setViewX}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: 'rgba(255, 100, 100, 0.2)',
+                border: '1px solid rgba(255, 100, 100, 0.4)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                fontSize: '0.85rem',
+                fontWeight: '700',
+                color: '#ff6464'
+              }}
+              className="control-button"
+              title="View X axis (click to toggle +X/-X)"
+            >
+              X
+            </button>
+
+            <button
+              onClick={setViewY}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: 'rgba(100, 255, 100, 0.2)',
+                border: '1px solid rgba(100, 255, 100, 0.4)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                fontSize: '0.85rem',
+                fontWeight: '700',
+                color: '#64ff64'
+              }}
+              className="control-button"
+              title="View Y axis (click to toggle +Y/-Y)"
+            >
+              Y
+            </button>
+
+            <button
+              onClick={setViewZ}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '10px',
+                background: 'rgba(100, 100, 255, 0.2)',
+                border: '1px solid rgba(100, 100, 255, 0.4)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+                fontSize: '0.85rem',
+                fontWeight: '700',
+                color: '#6464ff'
+              }}
+              className="control-button"
+              title="View Z axis (click to toggle +Z/-Z)"
+            >
+              Z
+            </button>
+
+            {/* Divider */}
+            <div style={{
+              width: '1px',
+              height: '40px',
+              background: 'rgba(255, 255, 255, 0.2)',
+              margin: '0 0.25rem'
+            }} />
 
             {/* Reset View */}
             <button
