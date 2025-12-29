@@ -1,45 +1,94 @@
 'use client'
-/*  STLViewerModal → CADViewerModal  (supports STL & STEP)
-    Same props:  project = { stlFile | stepFile, title, color, … }
-    Everything else (camera, UI, events) untouched.
-*/
 import { useEffect, useRef, useState } from 'react'
 
 export default function CADViewerModal({ project, onClose }) {
   const containerRef = useRef(null)
-  const sceneRef      = useRef(null)
-  const cameraRef     = useRef(null)
-  const rendererRef   = useRef(null)
-  const meshRef       = useRef(null)
-  const animationRef  = useRef(null)
+  const sceneRef = useRef(null)
+  const cameraRef = useRef(null)
+  const rendererRef = useRef(null)
+  const meshRef = useRef(null)
+  const animationRef = useRef(null)
 
-  const [threeReady, setThreeReady]   = useState(false)
-  const [isLoading, setIsLoading]     = useState(true)
-  const [error, setError]             = useState(null)
-  const [showPopup, setShowPopup]     = useState(false)
+  const [threeReady, setThreeReady] = useState(false)
+  const [occtReady, setOcctReady] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadingProgress, setLoadingProgress] = useState(0)
+  const [error, setError] = useState(null)
+  const [showPopup, setShowPopup] = useState(false)
 
-  /* ---------- camera state ---------- */
   const ctrlRef = useRef({
-    isRotating:false, isPanning:false, lastX:0, lastY:0,
-    target:null, spherical:null, panOffset:null, zoom:5,
-    touches:[], viewState:{x:0,y:0,z:0}
+    isRotating: false, isPanning: false, lastX: 0, lastY: 0,
+    target: null, spherical: null, panOffset: null, zoom: 5,
+    touches: [], viewState: { x: 0, y: 0, z: 0 }
   })
 
-  /* ---------- 1.  load THREE + optional loaders ---------- */
+  // Load Three.js
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (window.THREE) { injectExtraLoaders(); setThreeReady(true); return }
+    if (window.THREE) {
+      injectSTLLoader()
+      setThreeReady(true)
+      return
+    }
 
     const s = document.createElement('script')
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
-    s.onload = () => { injectExtraLoaders(); setThreeReady(true) }
+    s.onload = () => {
+      injectSTLLoader()
+      setThreeReady(true)
+    }
     s.onerror = () => setError('Could not load Three.js')
     document.head.appendChild(s)
   }, [])
 
-  /* ---------- 2.  scene setup ---------- */
+  // Load OpenCascade for STEP/IGES files
   useEffect(() => {
-    if (!threeReady || !containerRef.current) return
+    const file = project.stlFile || project.stepFile
+    if (!file) return
+    
+    const ext = file.split('?')[0].split('.').pop().toLowerCase()
+    if (ext === 'step' || ext === 'stp' || ext === 'igs' || ext === 'iges') {
+      loadOpenCascade()
+    } else {
+      setOcctReady(true) // Not needed for STL
+    }
+  }, [project])
+
+  const loadOpenCascade = () => {
+    if (window.occt) {
+      setOcctReady(true)
+      return
+    }
+
+    setLoadingProgress(10)
+    const script = document.createElement('script')
+    script.src = 'https://cdn.jsdelivr.net/npm/opencascade.js@2.0.0-beta.2/dist/opencascade.wasm.js'
+    script.onload = async () => {
+      try {
+        setLoadingProgress(30)
+        const OCC = await window.opencascade({
+          locateFile: () => 'https://cdn.jsdelivr.net/npm/opencascade.js@2.0.0-beta.2/dist/opencascade.wasm.wasm'
+        })
+        window.occt = OCC
+        setLoadingProgress(50)
+        setOcctReady(true)
+      } catch (err) {
+        console.error('OpenCascade init error:', err)
+        setError('CAD parser initialization failed')
+        setShowPopup(true)
+      }
+    }
+    script.onerror = () => {
+      setError('Could not load CAD parser library')
+      setShowPopup(true)
+    }
+    document.head.appendChild(script)
+  }
+
+  // Scene setup
+  useEffect(() => {
+    if (!threeReady || !occtReady || !containerRef.current) return
+    
     const THREE = window.THREE
     document.body.style.overflow = 'hidden'
 
@@ -54,33 +103,41 @@ export default function CADViewerModal({ project, onClose }) {
     )
     cameraRef.current = cam
 
-    const renderer = new THREE.WebGLRenderer({ antialias:true })
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight)
     renderer.setPixelRatio(window.devicePixelRatio)
     containerRef.current.appendChild(renderer.domElement)
     rendererRef.current = renderer
 
-    /* lights */
+    // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.6))
     const d1 = new THREE.DirectionalLight(0xffffff, 0.8)
-    d1.position.set(5,5,5); scene.add(d1)
+    d1.position.set(5, 5, 5)
+    scene.add(d1)
     const d2 = new THREE.DirectionalLight(0xffffff, 0.4)
-    d2.position.set(-5,-5,-5); scene.add(d2)
-    scene.add(new THREE.GridHelper(10,10,0x444444,0x222222))
+    d2.position.set(-5, -5, -5)
+    scene.add(d2)
+    scene.add(new THREE.GridHelper(10, 10, 0x444444, 0x222222))
 
-    /* ctrl vectors */
-    ctrlRef.current.target      = new THREE.Vector3()
-    ctrlRef.current.spherical   = new THREE.Spherical(5, Math.PI/3, Math.PI/4)
-    ctrlRef.current.panOffset   = new THREE.Vector3()
+    // Camera controls
+    ctrlRef.current.target = new THREE.Vector3()
+    ctrlRef.current.spherical = new THREE.Spherical(5, Math.PI / 3, Math.PI / 4)
+    ctrlRef.current.panOffset = new THREE.Vector3()
 
-    /* decide which loader to call */
+    // Load model
     const file = project.stlFile || project.stepFile
-    const ext  = file.split('?')[0].split('.').pop().toLowerCase()
+    const ext = file.split('?')[0].split('.').pop().toLowerCase()
+    
     if (ext === 'stl') loadSTL(file)
     else if (ext === 'step' || ext === 'stp') loadSTEP(file)
-    else { setError('Unsupported format'); setIsLoading(false); setShowPopup(true) }
+    else if (ext === 'igs' || ext === 'iges') loadIGES(file)
+    else {
+      setError('Unsupported format')
+      setIsLoading(false)
+      setShowPopup(true)
+    }
 
-    /* resize */
+    // Resize
     const onResize = () => {
       if (!containerRef.current) return
       cam.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight
@@ -89,7 +146,7 @@ export default function CADViewerModal({ project, onClose }) {
     }
     window.addEventListener('resize', onResize)
 
-    /* loop */
+    // Animation loop
     const animate = () => {
       animationRef.current = requestAnimationFrame(animate)
       updateCamera()
@@ -106,46 +163,161 @@ export default function CADViewerModal({ project, onClose }) {
       }
       rendererRef.current?.dispose()
     }
-  }, [project, threeReady])
+  }, [project, threeReady, occtReady])
 
-  /* ---------- 3.  STL loader (kept as before) ---------- */
+  // STL Loader
   function loadSTL(url) {
     const THREE = window.THREE
     const loader = new THREE.STLLoader()
     loader.load(
       url,
-      geo => { finishMesh(geo) },
+      geo => finishMesh(geo),
       () => {},
-      err => { console.error(err); setError('STL load failed'); setIsLoading(false); setShowPopup(true) }
+      err => {
+        console.error(err)
+        setError('STL load failed')
+        setIsLoading(false)
+        setShowPopup(true)
+      }
     )
   }
 
-  /* ---------- 4.  STEP loader ---------- */
-  function loadSTEP(url) {
-    const THREE = window.THREE
-    /* if the helper is not present, pull it once */
-    if (!window.StepLoader) {
-      const s = document.createElement('script')
-      s.src = 'https://cdn.jsdelivr.net/npm/three-step-loader@1/dist/step-loader.min.js'
-      s.onload = () => doLoadSTEP(url)
-      s.onerror = () => { setError('STEP loader unavailable'); setIsLoading(false); setShowPopup(true) }
-      document.head.appendChild(s)
-    } else { doLoadSTEP(url) }
-
-    function doLoadSTEP(u) {
-      const loader = new window.StepLoader()
-      loader.load(
-        u,
-        geo => { finishMesh(geo) },
-        () => {},
-        err => { console.error(err); setError('STEP load failed'); setIsLoading(false); setShowPopup(true) }
-      )
+  // STEP Loader
+  async function loadSTEP(url) {
+    try {
+      setLoadingProgress(60)
+      const response = await fetch(url)
+      const buffer = await response.arrayBuffer()
+      setLoadingProgress(75)
+      
+      const occt = window.occt
+      const fileBuffer = new Uint8Array(buffer)
+      
+      // Write to virtual filesystem
+      occt.FS.createDataFile('/', 'model.step', fileBuffer, true, true, true)
+      
+      // Read STEP file
+      const reader = new occt.STEPControl_Reader_1()
+      reader.ReadFile('model.step')
+      reader.TransferRoots()
+      const shape = reader.OneShape()
+      
+      setLoadingProgress(85)
+      
+      // Tessellate
+      const mesh = tessellateShape(shape)
+      finishMesh(mesh)
+      
+      // Cleanup
+      occt.FS.unlink('/model.step')
+    } catch (err) {
+      console.error('STEP load error:', err)
+      setError('STEP file could not be loaded')
+      setIsLoading(false)
+      setShowPopup(true)
     }
   }
 
-  /* ---------- 5.  common mesh finaliser ---------- */
+  // IGES Loader
+  async function loadIGES(url) {
+    try {
+      setLoadingProgress(60)
+      const response = await fetch(url)
+      const buffer = await response.arrayBuffer()
+      setLoadingProgress(75)
+      
+      const occt = window.occt
+      const fileBuffer = new Uint8Array(buffer)
+      
+      occt.FS.createDataFile('/', 'model.igs', fileBuffer, true, true, true)
+      
+      const reader = new occt.IGESControl_Reader_1()
+      reader.ReadFile('model.igs')
+      reader.TransferRoots()
+      const shape = reader.OneShape()
+      
+      setLoadingProgress(85)
+      
+      const mesh = tessellateShape(shape)
+      finishMesh(mesh)
+      
+      occt.FS.unlink('/model.igs')
+    } catch (err) {
+      console.error('IGES load error:', err)
+      setError('IGES file could not be loaded')
+      setIsLoading(false)
+      setShowPopup(true)
+    }
+  }
+
+  // Tessellate CAD shape to mesh
+  function tessellateShape(shape) {
+    const THREE = window.THREE
+    const occt = window.occt
+    
+    const mesher = new occt.BRepMesh_IncrementalMesh_2(shape, 0.1, false, 0.1, false)
+    mesher.Perform()
+    
+    const vertices = []
+    const normals = []
+    
+    const explorer = new occt.TopExp_Explorer_1()
+    for (explorer.Init(shape, occt.TopAbs_FACE, occt.TopAbs_SHAPE); explorer.More(); explorer.Next()) {
+      const face = occt.TopoDS.Face_1(explorer.Current())
+      const location = new occt.TopLoc_Location_1()
+      const triangulation = occt.BRep_Tool.Triangulation(face, location)
+      
+      if (triangulation.IsNull()) continue
+      
+      const nodeCount = triangulation.get().NbNodes()
+      const triCount = triangulation.get().NbTriangles()
+      
+      const transform = location.Transformation()
+      const oriented = face.Orientation_1() === occt.TopAbs_REVERSED
+      
+      for (let i = 1; i <= triCount; i++) {
+        const tri = triangulation.get().Triangle(i)
+        const indices = [tri.Value(1), tri.Value(2), tri.Value(3)]
+        
+        if (oriented) indices.reverse()
+        
+        const pts = indices.map(idx => {
+          const node = triangulation.get().Node(idx)
+          const transformed = node.Transformed(transform)
+          return [transformed.X(), transformed.Y(), transformed.Z()]
+        })
+        
+        // Calculate normal
+        const v1 = [pts[1][0] - pts[0][0], pts[1][1] - pts[0][1], pts[1][2] - pts[0][2]]
+        const v2 = [pts[2][0] - pts[0][0], pts[2][1] - pts[0][1], pts[2][2] - pts[0][2]]
+        const normal = [
+          v1[1] * v2[2] - v1[2] * v2[1],
+          v1[2] * v2[0] - v1[0] * v2[2],
+          v1[0] * v2[1] - v1[1] * v2[0]
+        ]
+        const len = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2)
+        normal[0] /= len
+        normal[1] /= len
+        normal[2] /= len
+        
+        pts.forEach(pt => {
+          vertices.push(...pt)
+          normals.push(...normal)
+        })
+      }
+    }
+    
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3))
+    geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals), 3))
+    
+    return geo
+  }
+
+  // Finish mesh setup
   function finishMesh(geo) {
     const THREE = window.THREE
+    
     geo.computeBoundingBox()
     const center = new THREE.Vector3()
     geo.boundingBox.getCenter(center)
@@ -157,34 +329,42 @@ export default function CADViewerModal({ project, onClose }) {
     const scale = 2 / maxDim
     geo.scale(scale, scale, scale)
 
+    // Check if transparent
+    const isTransparent = project.transparent || false
+    const opacity = project.opacity || (isTransparent ? 0.7 : 1.0)
+
     const mat = new THREE.MeshPhongMaterial({
-      color:new THREE.Color(project.color),
-      specular:0x111111,
-      shininess:200,
-      flatShading:false
+      color: new THREE.Color(project.color),
+      specular: 0x111111,
+      shininess: 200,
+      transparent: isTransparent,
+      opacity: opacity,
+      side: THREE.DoubleSide,
+      flatShading: false
     })
+    
     const mesh = new THREE.Mesh(geo, mat)
     sceneRef.current.add(mesh)
     meshRef.current = mesh
     setIsLoading(false)
+    setLoadingProgress(100)
   }
 
-  /* ---------- 6.  camera update ---------- */
   const updateCamera = () => {
-    const {spherical, target, panOffset} = ctrlRef.current
+    const { spherical, target, panOffset } = ctrlRef.current
     const pos = new window.THREE.Vector3().setFromSpherical(spherical)
     cameraRef.current.position.copy(target).add(pos).add(panOffset)
     cameraRef.current.lookAt(target.clone().add(panOffset))
   }
 
-  /* ---------- 7.  mouse / touch handlers ---------- */
   const handleMouseDown = e => {
     e.preventDefault()
     ctrlRef.current.isRotating = e.button === 0
-    ctrlRef.current.isPanning  = e.button === 2
+    ctrlRef.current.isPanning = e.button === 2
     ctrlRef.current.lastX = e.clientX
     ctrlRef.current.lastY = e.clientY
   }
+
   const handleMouseMove = e => {
     const c = ctrlRef.current
     if (!c.isRotating && !c.isPanning) return
@@ -192,8 +372,8 @@ export default function CADViewerModal({ project, onClose }) {
     const dy = e.clientY - c.lastY
     if (c.isRotating) {
       c.spherical.theta -= dx * 0.01
-      c.spherical.phi   += dy * 0.01
-      c.spherical.phi    = window.THREE.MathUtils.clamp(c.spherical.phi, 0.1, Math.PI-0.1)
+      c.spherical.phi += dy * 0.01
+      c.spherical.phi = window.THREE.MathUtils.clamp(c.spherical.phi, 0.1, Math.PI - 0.1)
     }
     if (c.isPanning) {
       const pan = new window.THREE.Vector3()
@@ -202,18 +382,26 @@ export default function CADViewerModal({ project, onClose }) {
       pan.addScaledVector(cameraRef.current.up, dy * 0.005)
       c.panOffset.add(pan)
     }
-    c.lastX = e.clientX; c.lastY = e.clientY
+    c.lastX = e.clientX
+    c.lastY = e.clientY
   }
-  const handleMouseUp = () => { ctrlRef.current.isRotating = ctrlRef.current.isPanning = false }
+
+  const handleMouseUp = () => {
+    ctrlRef.current.isRotating = ctrlRef.current.isPanning = false
+  }
+
   const handleWheel = e => {
     e.preventDefault()
     ctrlRef.current.spherical.radius = Math.max(1, Math.min(20,
       ctrlRef.current.spherical.radius + e.deltaY * 0.01))
   }
+
   const handleContextMenu = e => e.preventDefault()
 
-  /* touch */
-  const handleTouchStart = e => { ctrlRef.current.touches = Array.from(e.touches) }
+  const handleTouchStart = e => {
+    ctrlRef.current.touches = Array.from(e.touches)
+  }
+
   const handleTouchMove = e => {
     e.preventDefault()
     const c = ctrlRef.current
@@ -223,78 +411,84 @@ export default function CADViewerModal({ project, onClose }) {
       const dx = touches[0].clientX - prev[0].clientX
       const dy = touches[0].clientY - prev[0].clientY
       c.spherical.theta -= dx * 0.01
-      c.spherical.phi    = window.THREE.MathUtils.clamp(c.spherical.phi + dy * 0.01, 0.1, Math.PI-0.1)
+      c.spherical.phi = window.THREE.MathUtils.clamp(c.spherical.phi + dy * 0.01, 0.1, Math.PI - 0.1)
     } else if (touches.length === 2 && prev.length === 2) {
-      const cur = Math.hypot(touches[0].clientX-touches[1].clientX, touches[0].clientY-touches[1].clientY)
-      const p   = Math.hypot(prev[0].clientX-prev[1].clientX, prev[0].clientY-prev[1].clientY)
-      c.spherical.radius = Math.max(1, Math.min(20, c.spherical.radius - (cur-p)*0.01))
+      const cur = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY)
+      const p = Math.hypot(prev[0].clientX - prev[1].clientX, prev[0].clientY - prev[1].clientY)
+      c.spherical.radius = Math.max(1, Math.min(20, c.spherical.radius - (cur - p) * 0.01))
 
-      const cx=(touches[0].clientX+touches[1].clientX)/2, cy=(touches[0].clientY+touches[1].clientY)/2
-      const pcx=(prev[0].clientX+prev[1].clientX)/2, pcy=(prev[0].clientY+prev[1].clientY)/2
-      const pan=new window.THREE.Vector3()
+      const cx = (touches[0].clientX + touches[1].clientX) / 2
+      const cy = (touches[0].clientY + touches[1].clientY) / 2
+      const pcx = (prev[0].clientX + prev[1].clientX) / 2
+      const pcy = (prev[0].clientY + prev[1].clientY) / 2
+      const pan = new window.THREE.Vector3()
       pan.copy(cameraRef.current.position).sub(c.target).normalize()
-      pan.cross(cameraRef.current.up).setLength((cx-pcx)*0.005)
-      pan.addScaledVector(cameraRef.current.up, (cy-pcy)*0.005)
+      pan.cross(cameraRef.current.up).setLength((cx - pcx) * 0.005)
+      pan.addScaledVector(cameraRef.current.up, (cy - pcy) * 0.005)
       c.panOffset.add(pan)
     }
     c.touches = touches
   }
-  const handleTouchEnd = () => { ctrlRef.current.touches = [] }
 
-  /* ---------- 8.  view buttons ---------- */
-  const resetView = () => {
-    ctrlRef.current.spherical.set(5, Math.PI/3, Math.PI/4)
-    ctrlRef.current.target.set(0,0,0)
-    ctrlRef.current.panOffset.set(0,0,0)
-    ctrlRef.current.viewState = {x:0,y:0,z:0}
+  const handleTouchEnd = () => {
+    ctrlRef.current.touches = []
   }
+
+  const resetView = () => {
+    ctrlRef.current.spherical.set(5, Math.PI / 3, Math.PI / 4)
+    ctrlRef.current.target.set(0, 0, 0)
+    ctrlRef.current.panOffset.set(0, 0, 0)
+    ctrlRef.current.viewState = { x: 0, y: 0, z: 0 }
+  }
+
   const fitToScreen = () => {
     if (!meshRef.current) return
     const box = new window.THREE.Box3().setFromObject(meshRef.current)
     const center = box.getCenter(new window.THREE.Vector3())
-    const size   = box.getSize(new window.THREE.Vector3())
+    const size = box.getSize(new window.THREE.Vector3())
     const maxDim = Math.max(size.x, size.y, size.z)
-    const fov = cameraRef.current.fov * Math.PI/180
-    const dist = Math.abs(maxDim/2/Math.tan(fov/2))*1.3
+    const fov = cameraRef.current.fov * Math.PI / 180
+    const dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.3
     ctrlRef.current.target.copy(center)
     ctrlRef.current.spherical.radius = dist
-    ctrlRef.current.panOffset.set(0,0,0)
+    ctrlRef.current.panOffset.set(0, 0, 0)
   }
+
   const setViewX = () => {
     const s = ctrlRef.current.viewState.x
-    ctrlRef.current.spherical.theta = s ? -Math.PI/2 : Math.PI/2
-    ctrlRef.current.spherical.phi   = Math.PI/2
-    ctrlRef.current.viewState.x = 1-s
+    ctrlRef.current.spherical.theta = s ? -Math.PI / 2 : Math.PI / 2
+    ctrlRef.current.spherical.phi = Math.PI / 2
+    ctrlRef.current.viewState.x = 1 - s
   }
+
   const setViewY = () => {
     const s = ctrlRef.current.viewState.y
     ctrlRef.current.spherical.theta = 0
-    ctrlRef.current.spherical.phi   = s ? Math.PI/2 : -Math.PI/2
-    ctrlRef.current.viewState.y = 1-s
+    ctrlRef.current.spherical.phi = s ? Math.PI / 2 : -Math.PI / 2
+    ctrlRef.current.viewState.y = 1 - s
   }
+
   const setViewZ = () => {
     const s = ctrlRef.current.viewState.z
     ctrlRef.current.spherical.theta = s ? Math.PI : 0
-    ctrlRef.current.spherical.phi   = Math.PI/2
-    ctrlRef.current.viewState.z = 1-s
+    ctrlRef.current.spherical.phi = Math.PI / 2
+    ctrlRef.current.viewState.z = 1 - s
   }
+
   const handleDownload = () => {
     const a = document.createElement('a')
     a.href = project.stlFile || project.stepFile
-    a.download = project.title || 'model.' + (project.stlFile ? 'stl' : 'step')
+    a.download = project.title || 'model'
     a.click()
   }
 
-  /* ---------- 9.  inject loaders if not present ---------- */
-  function injectExtraLoaders() {
-    const THREE = window.THREE
-    if (!THREE.STLLoader) injectSTLLoader()
-    // StepLoader is loaded dynamically when needed
-  }
   function injectSTLLoader() {
-    // (same inline implementation you already had)
     const THREE = window.THREE
-    THREE.STLLoader = function () { this.manager = THREE.DefaultLoadingManager }
+    if (THREE.STLLoader) return
+    
+    THREE.STLLoader = function () {
+      this.manager = THREE.DefaultLoadingManager
+    }
     THREE.STLLoader.prototype = {
       load(url, onLoad, onProgress, onError) {
         const scope = this
@@ -309,33 +503,50 @@ export default function CADViewerModal({ project, onClose }) {
           return 80 + 4 + faces * 50 === v.byteLength
         }
         return isBin() ? parseBinary(data) : parseASCII(new TextDecoder().decode(data))
+        
         function parseBinary(buffer) {
-          const v = new DataView(buffer), faces = v.getUint32(80, true)
+          const v = new DataView(buffer)
+          const faces = v.getUint32(80, true)
           const geo = new THREE.BufferGeometry()
           const positions = new Float32Array(faces * 3 * 3)
-          const normals   = new Float32Array(faces * 3 * 3)
+          const normals = new Float32Array(faces * 3 * 3)
           for (let i = 0; i < faces; i++) {
             const start = 84 + i * 50
-            const norm = new THREE.Vector3(v.getFloat32(start, true), v.getFloat32(start + 4, true), v.getFloat32(start + 8, true))
+            const norm = new THREE.Vector3(
+              v.getFloat32(start, true),
+              v.getFloat32(start + 4, true),
+              v.getFloat32(start + 8, true)
+            )
             for (let j = 1; j <= 3; j++) {
-              const vs = start + j * 12, k = (i * 3 + j - 1) * 3
-              positions[k] = v.getFloat32(vs, true); positions[k + 1] = v.getFloat32(vs + 4, true); positions[k + 2] = v.getFloat32(vs + 8, true)
-              normals[k] = norm.x; normals[k + 1] = norm.y; normals[k + 2] = norm.z
+              const vs = start + j * 12
+              const k = (i * 3 + j - 1) * 3
+              positions[k] = v.getFloat32(vs, true)
+              positions[k + 1] = v.getFloat32(vs + 4, true)
+              positions[k + 2] = v.getFloat32(vs + 8, true)
+              normals[k] = norm.x
+              normals[k + 1] = norm.y
+              normals[k + 2] = norm.z
             }
           }
           geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-          geo.setAttribute('normal',   new THREE.BufferAttribute(normals, 3))
+          geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
           return geo
         }
+        
         function parseASCII(str) {
           const geo = new THREE.BufferGeometry()
-          const vertices = [], normals = []
+          const vertices = []
+          const normals = []
           const faceRe = /facet([\s\S]*?)endfacet/g
           let m
           while ((m = faceRe.exec(str)) !== null) {
             const txt = m[0]
             const normMatch = /normal\s+([-\d.eE]+)\s+([-\d.eE]+)\s+([-\d.eE]+)/.exec(txt)
-            const norm = new THREE.Vector3(parseFloat(normMatch[1]), parseFloat(normMatch[2]), parseFloat(normMatch[3]))
+            const norm = new THREE.Vector3(
+              parseFloat(normMatch[1]),
+              parseFloat(normMatch[2]),
+              parseFloat(normMatch[3])
+            )
             const vertRe = /vertex\s+([-\d.eE]+)\s+([-\d.eE]+)\s+([-\d.eE]+)/g
             let v
             while ((v = vertRe.exec(txt)) !== null) {
@@ -344,14 +555,13 @@ export default function CADViewerModal({ project, onClose }) {
             }
           }
           geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3))
-          geo.setAttribute('normal',   new THREE.BufferAttribute(new Float32Array(normals), 3))
+          geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals), 3))
           return geo
         }
       }
     }
   }
 
-  /* ---------- 10.  render ---------- */
   if (!project) return null
 
   return (
@@ -359,49 +569,51 @@ export default function CADViewerModal({ project, onClose }) {
       {showPopup && (
         <div
           style={{
-            position:'fixed', inset:0, zIndex:200, display:'flex',
-            alignItems:'center', justifyContent:'center',
-            background:'rgba(0,0,0,.85)', backdropFilter:'blur(8px)',
-            animation:'fadeIn .3s ease'
+            position: 'fixed', inset: 0, zIndex: 200, display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,.85)', backdropFilter: 'blur(8px)',
+            animation: 'fadeIn .3s ease'
           }}
           onClick={() => { setShowPopup(false); onClose() }}
         >
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              maxWidth:'500px', width:'90%',
-              background:'linear-gradient(135deg,rgba(15,20,32,.98),rgba(10,14,26,.98))',
-              borderRadius:'20px', border:'2px solid rgba(255,100,100,.5)',
-              boxShadow:'0 20px 60px rgba(0,0,0,.8)', padding:'2rem',
-              animation:'slideUp .4s cubic-bezier(.4,0,.2,1)', textAlign:'center'
+              maxWidth: '500px', width: '90%',
+              background: 'linear-gradient(135deg,rgba(15,20,32,.98),rgba(10,14,26,.98))',
+              borderRadius: '20px', border: '2px solid rgba(255,100,100,.5)',
+              boxShadow: '0 20px 60px rgba(0,0,0,.8)', padding: '2rem',
+              animation: 'slideUp .4s cubic-bezier(.4,0,.2,1)', textAlign: 'center'
             }}
           >
             <div style={{
-              width:'80px', height:'80px', margin:'0 auto 1.5rem',
-              borderRadius:'50%',
-              background:'linear-gradient(135deg,rgba(255,100,100,.2),rgba(255,100,100,.05))',
-              display:'flex', alignItems:'center', justifyContent:'center'
+              width: '80px', height: '80px', margin: '0 auto 1.5rem',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg,rgba(255,100,100,.2),rgba(255,100,100,.05))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,100,100,.9)" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <h2 style={{ fontSize:'1.5rem', fontWeight:'700', marginBottom:'1rem', color:'#fff' }}>Model Unavailable</h2>
-            <p style={{ fontSize:'1rem', lineHeight:'1.6', color:'rgba(255,255,255,.8)', marginBottom:'1.5rem' }}>
-              This 3D model is currently unavailable. As a student who transitioned between institutions,
-              I temporarily lack access to the software licenses required to export and showcase these models.
-              I'm working to restore access to provide you with the full interactive experience.
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: '#fff' }}>
+              {error || 'Model Unavailable'}
+            </h2>
+            <p style={{ fontSize: '1rem', lineHeight: '1.6', color: 'rgba(255,255,255,.8)', marginBottom: '1.5rem' }}>
+              {error === 'CAD parser initialization failed' 
+                ? 'The CAD file parser could not be initialized. This may be due to browser compatibility issues.'
+                : 'Unable to load the 3D model. Please check the file format and try again.'}
             </p>
             <button
               onClick={() => { setShowPopup(false); onClose() }}
               style={{
-                padding:'.875rem 2rem',
-                background:'linear-gradient(135deg,rgba(255,100,100,.8),rgba(255,100,100,.6))',
-                color:'#fff', border:'none', borderRadius:'12px', fontSize:'1rem', fontWeight:'600',
-                cursor:'pointer', transition:'all .2s ease', width:'100%'
+                padding: '.875rem 2rem',
+                background: 'linear-gradient(135deg,rgba(255,100,100,.8),rgba(255,100,100,.6))',
+                color: '#fff', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600',
+                cursor: 'pointer', transition: 'all .2s ease', width: '100%'
               }}
-              onMouseOver={e => { e.target.style.transform='translateY(-2px)'; e.target.style.boxShadow='0 6px 16px rgba(255,100,100,.4)' }}
-              onMouseOut={e => { e.target.style.transform='translateY(0)'; e.target.style.boxShadow='none' }}
             >
               Got it
             </button>
@@ -412,112 +624,111 @@ export default function CADViewerModal({ project, onClose }) {
       {!showPopup && (
         <div
           style={{
-            position:'fixed', inset:0, zIndex:100, display:'flex',
-            alignItems:'center', justifyContent:'center', animation:'fadeIn .3s ease'
+            position: 'fixed', inset: 0, zIndex: 100, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', animation: 'fadeIn .3s ease'
           }}
           onClick={onClose}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          <div style={{ position:'absolute', inset:0, background:'rgba(0,0,0,.95)', backdropFilter:'blur(8px)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.95)', backdropFilter: 'blur(8px)' }} />
 
-          {/* top control bar */}
+          {/* Control bar */}
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              position:'absolute', top:'2rem', left:'50%', transform:'translateX(-50%)',
-              display:'flex', gap:'.5rem', background:'rgba(0,0,0,.8)', backdropFilter:'blur(12px)',
-              padding:'.75rem 1rem', borderRadius:'16px', border:'1px solid rgba(255,255,255,.1)',
-              zIndex:10, animation:'slideDown .4s ease'
+              position: 'absolute', top: '2rem', left: '50%', transform: 'translateX(-50%)',
+              display: 'flex', gap: '.5rem', background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(12px)',
+              padding: '.75rem 1rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,.1)',
+              zIndex: 10, animation: 'slideDown .4s ease'
             }}
           >
             <div style={{
-              padding:'0 1rem', display:'flex', alignItems:'center', fontSize:'.9rem',
-              fontWeight:'600', color:'#fff', borderRight:'1px solid rgba(255,255,255,.2)',
-              maxWidth:'300px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'
+              padding: '0 1rem', display: 'flex', alignItems: 'center', fontSize: '.9rem',
+              fontWeight: '600', color: '#fff', borderRight: '1px solid rgba(255,255,255,.2)',
+              maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
             }}>
               {project.title || 'CAD Model'}
             </div>
 
-            <button onClick={setViewX} className="control-button" title="View X axis (toggle +X/-X)" style={{
-              width:'40px', height:'40px', borderRadius:'10px',
-              background:'rgba(255,100,100,.2)', border:'1px solid rgba(255,100,100,.4)',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              fontSize:'.85rem', fontWeight:'700', color:'#ff6464'
+            <button onClick={setViewX} title="View X axis" style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(255,100,100,.2)', border: '1px solid rgba(255,100,100,.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '.85rem', fontWeight: '700', color: '#ff6464', cursor: 'pointer'
             }}>X</button>
 
-            <button onClick={setViewY} className="control-button" title="View Y axis (toggle +Y/-Y)" style={{
-              width:'40px', height:'40px', borderRadius:'10px',
-              background:'rgba(100,255,100,.2)', border:'1px solid rgba(100,255,100,.4)',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              fontSize:'.85rem', fontWeight:'700', color:'#64ff64'
+            <button onClick={setViewY} title="View Y axis" style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(100,255,100,.2)', border: '1px solid rgba(100,255,100,.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '.85rem', fontWeight: '700', color: '#64ff64', cursor: 'pointer'
             }}>Y</button>
 
-            <button onClick={setViewZ} className="control-button" title="View Z axis (toggle +Z/-Z)" style={{
-              width:'40px', height:'40px', borderRadius:'10px',
-              background:'rgba(100,100,255,.2)', border:'1px solid rgba(100,100,255,.4)',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              fontSize:'.85rem', fontWeight:'700', color:'#6464ff'
+            <button onClick={setViewZ} title="View Z axis" style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(100,100,255,.2)', border: '1px solid rgba(100,255,255,.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '.85rem', fontWeight: '700', color: '#6464ff', cursor: 'pointer'
             }}>Z</button>
 
-            <div style={{ width:'1px', height:'40px', background:'rgba(255,255,255,.2)', margin:'0 .25rem' }} />
+            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,.2)', margin: '0 .25rem' }} />
 
-            <button onClick={resetView} className="control-button" title="Reset View" style={{
-              width:'40px', height:'40px', borderRadius:'10px',
-              background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)',
-              display:'flex', alignItems:'center', justifyContent:'center'
+            <button onClick={resetView} title="Reset View" style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
             }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M3 12a9 9 0 109 9 9 9 0 00-9-9z" stroke="white" strokeWidth="2"/>
-                <path d="M12 7v5l3 3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M3 12a9 9 0 109 9 9 9 0 00-9-9z" stroke="white" strokeWidth="2" />
+                <path d="M12 7v5l3 3" stroke="white" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
 
-            <button onClick={fitToScreen} className="control-button" title="Fit to Screen" style={{
-              width:'40px', height:'40px', borderRadius:'10px',
-              background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)',
-              display:'flex', alignItems:'center', justifyContent:'center'
+            <button onClick={fitToScreen} title="Fit to Screen" style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
             }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M9 9l6 6m0-6l-6 6"/>
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 9l6 6m0-6l-6 6" />
               </svg>
             </button>
 
-            <div style={{ width:'1px', height:'40px', background:'rgba(255,255,255,.2)', margin:'0 .25rem' }} />
+            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,.2)', margin: '0 .25rem' }} />
 
-            <button onClick={handleDownload} className="control-button" title="Download" style={{
-              width:'40px', height:'40px', borderRadius:'10px',
-              background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)',
-              display:'flex', alignItems:'center', justifyContent:'center'
+            <button onClick={handleDownload} title="Download" style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
             }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
           </div>
 
-          {/* close */}
+          {/* Close button */}
           <button
             onClick={onClose}
-            className="control-button"
             title="Close (Esc)"
             style={{
-              position:'absolute', top:'2rem', right:'2rem',
-              width:'48px', height:'48px', borderRadius:'50%',
-              background:'rgba(0,0,0,.8)', backdropFilter:'blur(12px)',
-              border:'1px solid rgba(255,255,255,.1)', display:'flex',
-              alignItems:'center', justifyContent:'center', zIndex:10,
-              animation:'slideDown .4s ease'
+              position: 'absolute', top: '2rem', right: '2rem',
+              width: '48px', height: '48px', borderRadius: '50%',
+              background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(255,255,255,.1)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', zIndex: 10,
+              animation: 'slideDown .4s ease', cursor: 'pointer'
             }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
 
-          {/* canvas container */}
+          {/* Canvas container */}
           <div
             ref={containerRef}
             onClick={e => e.stopPropagation()}
@@ -528,42 +739,59 @@ export default function CADViewerModal({ project, onClose }) {
             onTouchEnd={handleTouchEnd}
             onContextMenu={handleContextMenu}
             style={{
-              position:'relative', width:'90%', height:'90%',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              overflow:'hidden', cursor:ctrlRef.current.isRotating || ctrlRef.current.isPanning ? 'grabbing' : 'grab',
-              userSelect:'none'
+              position: 'relative', width: '90%', height: '90%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden',
+              cursor: ctrlRef.current.isRotating || ctrlRef.current.isPanning ? 'grabbing' : 'grab',
+              userSelect: 'none'
             }}
           >
             {isLoading && !error && (
-              <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.2rem', color:'#fff' }}>
-                Loading 3D model...
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex',
+                flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.2rem', color: '#fff', gap: '1rem'
+              }}>
+                <div>Loading CAD model...</div>
+                {loadingProgress > 0 && (
+                  <div style={{
+                    width: '200px', height: '4px', background: 'rgba(255,255,255,.1)',
+                    borderRadius: '2px', overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${loadingProgress}%`, height: '100%',
+                      background: 'linear-gradient(90deg, hsl(30, 100%, 60%), hsl(30, 100%, 70%))',
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </div>
+                )}
               </div>
             )}
           </div>
 
-          {/* help text */}
+          {/* Help text */}
           <div
             style={{
-              position:'absolute', bottom:'2rem', left:'50%', transform:'translateX(-50%)',
-              background:'rgba(0,0,0,.8)', backdropFilter:'blur(12px)', padding:'.75rem 1.5rem',
-              borderRadius:'12px', border:'1px solid rgba(255,255,255,.1)', fontSize:'.85rem',
-              color:'rgba(255,255,255,.7)', display:'flex', gap:'2rem',
-              animation:'slideUp .4s ease', zIndex:10
+              position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
+              background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(12px)', padding: '.75rem 1.5rem',
+              borderRadius: '12px', border: '1px solid rgba(255,255,255,.1)', fontSize: '.85rem',
+              color: 'rgba(255,255,255,.7)', display: 'flex', gap: '2rem',
+              animation: 'slideUp .4s ease', zIndex: 10
             }}
           >
-            <span><kbd style={{ background:'rgba(255,255,255,.1)', padding:'.25rem .5rem', borderRadius:'4px', fontFamily:'monospace', fontSize:'.8rem' }}>Drag</kbd> to rotate</span>
-            <span><kbd style={{ background:'rgba(255,255,255,.1)', padding:'.25rem .5rem', borderRadius:'4px', fontFamily:'monospace', fontSize:'.8rem' }}>Scroll</kbd> to zoom</span>
-            <span><kbd style={{ background:'rgba(255,255,255,.1)', padding:'.25rem .5rem', borderRadius:'4px', fontFamily:'monospace', fontSize:'.8rem' }}>Right-click</kbd> to pan</span>
+            <span><kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>Drag</kbd> to rotate</span>
+            <span><kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>Scroll</kbd> to zoom</span>
+            <span><kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>Right-click</kbd> to pan</span>
           </div>
         </div>
       )}
 
       <style jsx>{`
-        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        @keyframes slideDown{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-        @keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-        .control-button:not(:disabled):hover{background:rgba(255,255,255,.2)!important;transform:scale(1.05)}
-        .control-button:not(:disabled):active{transform:scale(0.95)}
+        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }
+        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }
+        button:hover { opacity: 0.8; transform: scale(1.05); transition: all 0.2s ease; }
+        button:active { transform: scale(0.95); }
       `}</style>
     </>
   )
