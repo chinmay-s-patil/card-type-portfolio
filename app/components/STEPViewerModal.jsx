@@ -51,12 +51,12 @@ export default function STEPViewerModal({ project, onClose }) {
 
     setLoadingProgress(10)
     const script = document.createElement('script')
-    script.src = 'https://raw.githubusercontent.com/donalffons/opencascade.js/2.0.0-beta.2/dist/opencascade.wasm.js'
+    script.src = 'https://raw.githubusercontent.com/donalffons/opencascade.js/2.0.0-beta.4fa3125/dist/opencascade.wasm.js'
     script.onload = async () => {
       try {
         setLoadingProgress(30)
         const OCC = await window.opencascade({
-            locateFile: () => 'https://raw.githubusercontent.com/donalffons/opencascade.js/2.0.0-beta.2/dist/opencascade.wasm.wasm'
+            locateFile: () => 'https://raw.githubusercontent.com/donalffons/opencascade.js/2.0.0-beta.4fa3125/dist/opencascade.wasm.wasm'
         })
         window.occt = OCC
         setLoadingProgress(50)
