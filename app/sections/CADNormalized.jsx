@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import STLViewerModal from '../components/STLViewerModal'
+import STEPViewerModal from '../components/STEPViewerModal'
 import CADList from '../consts/CADList'
 
 export default function CADNormalized() {
@@ -29,7 +29,13 @@ export default function CADNormalized() {
     return () => window.removeEventListener('resize', calculateScale)
   }, [])
 
-  const projects = CADList
+  // Filter only STEP/IGES files
+  const projects = CADList.filter(project => {
+    if (!project.stepFile) return false
+    const ext = project.stepFile.split('?')[0].split('.').pop().toLowerCase()
+    return ext === 'step' || ext === 'stp' || ext === 'igs' || ext === 'iges'
+  })
+
   const totalPages = Math.ceil(projects.length / PROJECTS_PER_PAGE)
 
   // Scroll detection
@@ -115,7 +121,7 @@ export default function CADNormalized() {
               backgroundClip: 'text',
               lineHeight: '1.1'
             }}>
-              CAD Projects
+              STEP/IGES CAD Models
             </h2>
             <p style={{
               fontSize: '18px',
@@ -123,86 +129,88 @@ export default function CADNormalized() {
               color: 'rgba(255, 255, 255, 0.68)',
               maxWidth: '900px'
             }}>
-              Explore my mechanical design work — from precision engineering to creative product design. 
+              Explore my professional CAD work in STEP and IGES formats — from precision engineering to creative product design. 
               Click any project to view and interact with the 3D model.
             </p>
           </div>
 
           {/* Page Navigation */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '20px',
-            marginBottom: '24px',
-            flexShrink: 0
-          }}>
-            <button
-              onClick={() => scrollToPage(Math.max(0, currentPage - 1))}
-              disabled={currentPage === 0}
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                background: currentPage === 0 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: currentPage === 0 ? 0.3 : 1,
-                transition: 'all 0.3s ease'
-              }}
-              aria-label="Previous page"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+          {totalPages > 1 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '20px',
+              marginBottom: '24px',
+              flexShrink: 0
+            }}>
+              <button
+                onClick={() => scrollToPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: currentPage === 0 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: currentPage === 0 ? 0.3 : 1,
+                  transition: 'all 0.3s ease'
+                }}
+                aria-label="Previous page"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              {Array.from({ length: totalPages }).map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => scrollToPage(idx)}
-                  style={{
-                    width: idx === currentPage ? '52px' : '36px',
-                    height: '7px',
-                    borderRadius: '4px',
-                    background: idx === currentPage ? 'hsl(30, 100%, 60%)' : 'rgba(255, 255, 255, 0.15)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow: idx === currentPage ? '0 0 12px hsl(30, 100%, 60% / 0.5)' : 'none'
-                  }}
-                  aria-label={`Go to page ${idx + 1}`}
-                />
-              ))}
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                {Array.from({ length: totalPages }).map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => scrollToPage(idx)}
+                    style={{
+                      width: idx === currentPage ? '52px' : '36px',
+                      height: '7px',
+                      borderRadius: '4px',
+                      background: idx === currentPage ? 'hsl(30, 100%, 60%)' : 'rgba(255, 255, 255, 0.15)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: idx === currentPage ? '0 0 12px hsl(30, 100%, 60% / 0.5)' : 'none'
+                    }}
+                    aria-label={`Go to page ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={() => scrollToPage(Math.min(totalPages - 1, currentPage + 1))}
+                disabled={currentPage === totalPages - 1}
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: currentPage === totalPages - 1 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  cursor: currentPage === totalPages - 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: currentPage === totalPages - 1 ? 0.3 : 1,
+                  transition: 'all 0.3s ease'
+                }}
+                aria-label="Next page"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
             </div>
-
-            <button
-              onClick={() => scrollToPage(Math.min(totalPages - 1, currentPage + 1))}
-              disabled={currentPage === totalPages - 1}
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                background: currentPage === totalPages - 1 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                cursor: currentPage === totalPages - 1 ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: currentPage === totalPages - 1 ? 0.3 : 1,
-                transition: 'all 0.3s ease'
-              }}
-              aria-label="Next page"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
+          )}
 
           {/* Horizontal Scroll Container */}
           <div 
@@ -261,7 +269,7 @@ export default function CADNormalized() {
                         }}
                         className="cad-card"
                       >
-                        {/* Image Container with Overlay - LARGER */}
+                        {/* Image Container with Overlay */}
                         <div style={{
                           position: 'relative',
                           width: '100%',
@@ -292,27 +300,34 @@ export default function CADNormalized() {
                           className="gradient-overlay"
                           />
 
-                          {/* 3D Icon Badge */}
+                          {/* STEP/IGES Badge */}
                           <div style={{
                             position: 'absolute',
                             top: '16px',
                             right: '16px',
-                            width: '48px',
-                            height: '48px',
-                            borderRadius: '12px',
+                            padding: '8px 16px',
+                            borderRadius: '10px',
                             background: 'rgba(0, 0, 0, 0.8)',
                             backdropFilter: 'blur(8px)',
                             border: `2px solid ${project.color}`,
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
+                            gap: '6px',
                             boxShadow: `0 4px 12px ${project.color}50`
                           }}>
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                               <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke={project.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               <path d="M2 17L12 22L22 17" stroke={project.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               <path d="M2 12L12 17L22 12" stroke={project.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
+                            <span style={{
+                              fontSize: '12px',
+                              fontWeight: '700',
+                              color: project.color,
+                              textTransform: 'uppercase'
+                            }}>
+                              {project.stepFile.split('.').pop().toUpperCase()}
+                            </span>
                           </div>
 
                           {/* Year Badge */}
@@ -429,7 +444,7 @@ export default function CADNormalized() {
       </div>
 
       {selectedProject && (
-        <STLViewerModal 
+        <STEPViewerModal 
           project={selectedProject} 
           onClose={closeProject} 
         />
