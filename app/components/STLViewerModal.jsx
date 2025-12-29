@@ -10,8 +10,7 @@ export default function STLViewerModal({ project, onClose }) {
   const animationFrameRef = useRef(null)
   const [threeLoaded, setThreeLoaded] = useState(false)
   const [showUnavailablePopup, setShowUnavailablePopup] = useState(false)
-  
-  // Camera controls state
+
   const controlsRef = useRef({
     isRotating: false,
     isPanning: false,
@@ -23,191 +22,45 @@ export default function STLViewerModal({ project, onClose }) {
     panY: 0,
     zoom: 5,
     touches: [],
-    viewState: { x: 0, y: 0, z: 0 } // 0 = +axis, 1 = -axis
+    viewState: { x: 0, y: 0, z: 0 }
   })
 
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Load Three.js and STLLoader
+  /* ---------- 1.  Load THREE and the loaders ---------- */
   useEffect(() => {
-    if (typeof window !== 'undefined' && !window.THREE) {
-      console.log('Loading Three.js...')
-      const threeScript = document.createElement('script')
-      threeScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
-      threeScript.onload = () => {
-        console.log('Three.js loaded successfully')
-        if (window.THREE && !window.THREE.STLLoader) {
-          window.THREE.STLLoader = function () {
-            this.manager = window.THREE.DefaultLoadingManager
-          }
-          
-          window.THREE.STLLoader.prototype.load = function (url, onLoad, onProgress, onError) {
-            const scope = this
-            const loader = new window.THREE.FileLoader(this.manager)
-            loader.setPath(this.path)
-            loader.setResponseType('arraybuffer')
-            loader.setRequestHeader(this.requestHeader)
-            loader.setWithCredentials(this.withCredentials)
-            
-            loader.load(url, function (data) {
-              try {
-                if (!(data instanceof ArrayBuffer)) {
-                  if (typeof data === 'string') {
-                    const encoder = new TextEncoder()
-                    data = encoder.encode(data).buffer
-                  } else if (data instanceof Uint8Array) {
-                    data = data.buffer
-                  } else {
-                    throw new Error('Invalid data type received')
-                  }
-                }
-                onLoad(scope.parse(data))
-              } catch (e) {
-                if (onError) {
-                  onError(e)
-                } else {
-                  console.error(e)
-                }
-                scope.manager.itemError(url)
-              }
-            }, onProgress, onError)
-          }
-          
-          window.THREE.STLLoader.prototype.parse = function (data) {
-            let arrayBuffer
-            if (data instanceof ArrayBuffer) {
-              arrayBuffer = data
-            } else if (data.buffer && data.buffer instanceof ArrayBuffer) {
-              arrayBuffer = data.buffer
-            } else if (typeof data === 'string') {
-              const encoder = new TextEncoder()
-              arrayBuffer = encoder.encode(data).buffer
-            } else {
-              throw new Error('Invalid data type: expected ArrayBuffer, Uint8Array, or String')
-            }
-            
-            function isBinary(buffer) {
-              const reader = new DataView(buffer)
-              const numFaces = reader.getUint32(80, true)
-              const faceSize = (32 / 8 * 3) + ((32 / 8 * 3) * 3) + (16 / 8)
-              const numExpectedBytes = 80 + (32 / 8) + (numFaces * faceSize)
-              return numExpectedBytes === reader.byteLength
-            }
-            
-            const binData = new Uint8Array(arrayBuffer)
-            const isBinaryFile = isBinary(arrayBuffer)
-            
-            return isBinaryFile ? parseBinary(binData) : parseASCII(ensureString(binData))
-          }
-          
-          function parseASCII(data) {
-            const geometry = new window.THREE.BufferGeometry()
-            const patternFace = /facet([\s\S]*?)endfacet/g
-            let faceCounter = 0
-            
-            let result
-            while ((result = patternFace.exec(data)) !== null) {
-              faceCounter++
-            }
-            
-            const vertices = new Float32Array(faceCounter * 3 * 3)
-            const normals = new Float32Array(faceCounter * 3 * 3)
-            
-            const patternNormal = /normal\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)/g
-            const patternVertex = /vertex\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)/g
-            
-            patternFace.lastIndex = 0
-            let vertexCounter = 0
-            
-            while ((result = patternFace.exec(data)) !== null) {
-              const text = result[0]
-              
-              patternNormal.lastIndex = 0
-              const normalResult = patternNormal.exec(text)
-              const normal = new window.THREE.Vector3(
-                parseFloat(normalResult[1]),
-                parseFloat(normalResult[3]),
-                parseFloat(normalResult[5])
-              )
-              
-              patternVertex.lastIndex = 0
-              while ((result = patternVertex.exec(text)) !== null) {
-                vertices[vertexCounter] = parseFloat(result[1])
-                vertices[vertexCounter + 1] = parseFloat(result[3])
-                vertices[vertexCounter + 2] = parseFloat(result[5])
-                
-                normals[vertexCounter] = normal.x
-                normals[vertexCounter + 1] = normal.y
-                normals[vertexCounter + 2] = normal.z
-                
-                vertexCounter += 3
-              }
-            }
-            
-            geometry.setAttribute('position', new window.THREE.BufferAttribute(vertices, 3))
-            geometry.setAttribute('normal', new window.THREE.BufferAttribute(normals, 3))
-            
-            return geometry
-          }
-          
-          function parseBinary(data) {
-            const reader = new DataView(data.buffer)
-            const faces = reader.getUint32(80, true)
-            
-            const geometry = new window.THREE.BufferGeometry()
-            const vertices = new Float32Array(faces * 3 * 3)
-            const normals = new Float32Array(faces * 3 * 3)
-            
-            for (let face = 0; face < faces; face++) {
-              const start = 84 + face * 50
-              
-              const normalX = reader.getFloat32(start, true)
-              const normalY = reader.getFloat32(start + 4, true)
-              const normalZ = reader.getFloat32(start + 8, true)
-              
-              for (let i = 1; i <= 3; i++) {
-                const vertexstart = start + i * 12
-                const componentIdx = (face * 3 * 3) + ((i - 1) * 3)
-                
-                vertices[componentIdx] = reader.getFloat32(vertexstart, true)
-                vertices[componentIdx + 1] = reader.getFloat32(vertexstart + 4, true)
-                vertices[componentIdx + 2] = reader.getFloat32(vertexstart + 8, true)
-                
-                normals[componentIdx] = normalX
-                normals[componentIdx + 1] = normalY
-                normals[componentIdx + 2] = normalZ
-              }
-            }
-            
-            geometry.setAttribute('position', new window.THREE.BufferAttribute(vertices, 3))
-            geometry.setAttribute('normal', new window.THREE.BufferAttribute(normals, 3))
-            
-            return geometry
-          }
-          
-          function ensureString(buffer) {
-            if (typeof buffer !== 'string') {
-              return new TextDecoder().decode(buffer)
-            }
-            return buffer
-          }
-        }
-        setThreeLoaded(true)
-      }
-      threeScript.onerror = () => {
-        console.error('Failed to load Three.js')
-        setError('Failed to load 3D viewer')
-      }
-      document.head.appendChild(threeScript)
-    } else if (window.THREE) {
+    if (typeof window === 'undefined') return
+    if (window.THREE) {            // already loaded
+      setThreeLoaded(true)
+      return
+    }
+
+    const threeScript = document.createElement('script')
+    threeScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
+    threeScript.onload = async () => {
+      const THREE = window.THREE
+
+      /* ---- STL ---- */
+      await loadSTLLoader(THREE)
+
+      /* ---- STEP ---- */
+      await loadSTPLoader(THREE)
+
       setThreeLoaded(true)
     }
+    threeScript.onerror = () => {
+      console.error('Could not load Three.js')
+      setError('Failed to load 3D viewer')
+    }
+    document.head.appendChild(threeScript)
+
+    return () => threeScript.remove()
   }, [])
 
+  /* ---------- 2.  Scene setup ---------- */
   useEffect(() => {
-    if (!containerRef.current || !threeLoaded || !window.THREE) return
-
+    if (!containerRef.current || !threeLoaded) return
     const THREE = window.THREE
 
     document.body.style.overflow = 'hidden'
@@ -231,67 +84,69 @@ export default function STLViewerModal({ project, onClose }) {
     containerRef.current.appendChild(renderer.domElement)
     rendererRef.current = renderer
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
-    scene.add(ambientLight)
+    /* lights */
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6))
+    const d1 = new THREE.DirectionalLight(0xffffff, 0.8)
+    d1.position.set(5, 5, 5)
+    scene.add(d1)
+    const d2 = new THREE.DirectionalLight(0xffffff, 0.4)
+    d2.position.set(-5, -5, -5)
+    scene.add(d2)
+    scene.add(new THREE.GridHelper(10, 10, 0x444444, 0x222222))
 
-    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8)
-    directionalLight1.position.set(5, 5, 5)
-    scene.add(directionalLight1)
+    /* ---------- 3.  Load geometry ---------- */
+    const url = project.stlFile
+    const ext = url.split('.').pop().toLowerCase()
 
-    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4)
-    directionalLight2.position.set(-5, -5, -5)
-    scene.add(directionalLight2)
+    const onSuccess = (geometry) => {
+      geometry.computeBoundingBox()
+      const center = new THREE.Vector3()
+      geometry.boundingBox.getCenter(center)
+      geometry.translate(-center.x, -center.y, -center.z)
 
-    const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222)
-    scene.add(gridHelper)
+      const size = new THREE.Vector3()
+      geometry.boundingBox.getSize(size)
+      const maxDim = Math.max(size.x, size.y, size.z)
+      const scale = 2 / maxDim
+      geometry.scale(scale, scale, scale)
 
-    const loader = new THREE.STLLoader()
-    loader.load(
-      project.stlFile,
-      (geometry) => {
-        geometry.computeBoundingBox()
-        const center = new THREE.Vector3()
-        geometry.boundingBox.getCenter(center)
-        geometry.translate(-center.x, -center.y, -center.z)
+      const material = new THREE.MeshPhongMaterial({
+        color: new THREE.Color(project.color),
+        specular: 0x111111,
+        shininess: 200,
+        flatShading: false
+      })
 
-        const size = new THREE.Vector3()
-        geometry.boundingBox.getSize(size)
-        const maxDim = Math.max(size.x, size.y, size.z)
-        const scale = 2 / maxDim
-        geometry.scale(scale, scale, scale)
+      const mesh = new THREE.Mesh(geometry, material)
+      scene.add(mesh)
+      meshRef.current = mesh
+      setIsLoading(false)
+    }
 
-        const material = new THREE.MeshPhongMaterial({
-          color: new THREE.Color(project.color),
-          specular: 0x111111,
-          shininess: 200,
-          flatShading: false
-        })
+    const onFail = (err) => {
+      console.error(err)
+      setError(`Failed to load: ${url}`)
+      setIsLoading(false)
+      setShowUnavailablePopup(true)
+    }
 
-        const mesh = new THREE.Mesh(geometry, material)
-        scene.add(mesh)
-        meshRef.current = mesh
+    if (ext === 'stl') {
+      const loader = new THREE.STLLoader()
+      loader.load(url, onSuccess, undefined, onFail)
+    } else if (ext === 'step' || ext === 'stp') {
+      const loader = new THREE.STPLoader()
+      loader.load(url, onSuccess, undefined, onFail)
+    } else {
+      onFail(new Error('Unsupported 3-D extension: ' + ext))
+    }
 
-        setIsLoading(false)
-      },
-      (progress) => {
-        console.log('Loading:', (progress.loaded / progress.total * 100) + '%')
-      },
-      (error) => {
-        console.error('Error loading STL:', error)
-        setError(`Failed to load: ${project.stlFile}`)
-        setIsLoading(false)
-        setShowUnavailablePopup(true)
-      }
-    )
-
+    /* ---------- 4.  Render loop ---------- */
     const animate = () => {
       animationFrameRef.current = requestAnimationFrame(animate)
-
       if (meshRef.current) {
         meshRef.current.rotation.x = controlsRef.current.rotationX
         meshRef.current.rotation.y = controlsRef.current.rotationY
       }
-
       camera.position.x = controlsRef.current.panX
       camera.position.y = controlsRef.current.panY
       camera.position.z = controlsRef.current.zoom
@@ -310,107 +165,73 @@ export default function STLViewerModal({ project, onClose }) {
     return () => {
       document.body.style.overflow = 'unset'
       window.removeEventListener('resize', handleResize)
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-      }
-      if (rendererRef.current && containerRef.current) {
-        containerRef.current.removeChild(rendererRef.current.domElement)
-      }
-      if (rendererRef.current) {
-        rendererRef.current.dispose()
-      }
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
+      if (rendererRef.current?.domElement) containerRef.current?.removeChild(rendererRef.current.domElement)
+      rendererRef.current?.dispose()
     }
   }, [project, threeLoaded])
 
+  /* ---------- 5.  Controls (unchanged) ---------- */
   const handleMouseDown = (e) => {
     e.preventDefault()
-    if (e.button === 0) {
-      controlsRef.current.isRotating = true
-    } else if (e.button === 2) {
-      controlsRef.current.isPanning = true
-    }
+    if (e.button === 0) controlsRef.current.isRotating = true
+    else if (e.button === 2) controlsRef.current.isPanning = true
     controlsRef.current.lastX = e.clientX
     controlsRef.current.lastY = e.clientY
   }
-
   const handleMouseMove = (e) => {
     if (!controlsRef.current.isRotating && !controlsRef.current.isPanning) return
-
-    const deltaX = e.clientX - controlsRef.current.lastX
-    const deltaY = e.clientY - controlsRef.current.lastY
-
+    const dx = e.clientX - controlsRef.current.lastX
+    const dy = e.clientY - controlsRef.current.lastY
     if (controlsRef.current.isRotating) {
-      controlsRef.current.rotationY += deltaX * 0.01
-      controlsRef.current.rotationX += deltaY * 0.01
+      controlsRef.current.rotationY += dx * 0.01
+      controlsRef.current.rotationX += dy * 0.01
     }
-
     if (controlsRef.current.isPanning) {
-      controlsRef.current.panX += deltaX * 0.005
-      controlsRef.current.panY -= deltaY * 0.005
+      controlsRef.current.panX += dx * 0.005
+      controlsRef.current.panY -= dy * 0.005
     }
-
     controlsRef.current.lastX = e.clientX
     controlsRef.current.lastY = e.clientY
   }
-
   const handleMouseUp = () => {
     controlsRef.current.isRotating = false
     controlsRef.current.isPanning = false
   }
-
   const handleWheel = (e) => {
     e.preventDefault()
-    const delta = e.deltaY * 0.01
-    controlsRef.current.zoom = Math.max(1, Math.min(20, controlsRef.current.zoom + delta))
+    controlsRef.current.zoom = Math.max(1, Math.min(20, controlsRef.current.zoom + e.deltaY * 0.01))
   }
-
   const handleTouchStart = (e) => {
     e.preventDefault()
     controlsRef.current.touches = Array.from(e.touches)
   }
-
   const handleTouchMove = (e) => {
     e.preventDefault()
     const touches = Array.from(e.touches)
-
     if (touches.length === 1 && controlsRef.current.touches.length === 1) {
-      const deltaX = touches[0].clientX - controlsRef.current.touches[0].clientX
-      const deltaY = touches[0].clientY - controlsRef.current.touches[0].clientY
-      controlsRef.current.rotationY += deltaX * 0.01
-      controlsRef.current.rotationX += deltaY * 0.01
+      const dx = touches[0].clientX - controlsRef.current.touches[0].clientX
+      const dy = touches[0].clientY - controlsRef.current.touches[0].clientY
+      controlsRef.current.rotationY += dx * 0.01
+      controlsRef.current.rotationX += dy * 0.01
     } else if (touches.length === 2 && controlsRef.current.touches.length === 2) {
-      const currentDist = Math.hypot(
-        touches[0].clientX - touches[1].clientX,
-        touches[0].clientY - touches[1].clientY
-      )
-      const lastDist = Math.hypot(
-        controlsRef.current.touches[0].clientX - controlsRef.current.touches[1].clientX,
-        controlsRef.current.touches[0].clientY - controlsRef.current.touches[1].clientY
-      )
-      
-      const distDelta = currentDist - lastDist
-      controlsRef.current.zoom = Math.max(1, Math.min(20, controlsRef.current.zoom - distDelta * 0.01))
+      const cur = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY)
+      const prev = Math.hypot(controlsRef.current.touches[0].clientX - controlsRef.current.touches[1].clientX, controlsRef.current.touches[0].clientY - controlsRef.current.touches[1].clientY)
+      controlsRef.current.zoom = Math.max(1, Math.min(20, controlsRef.current.zoom - (cur - prev) * 0.01))
 
       const centerX = (touches[0].clientX + touches[1].clientX) / 2
       const centerY = (touches[0].clientY + touches[1].clientY) / 2
       const lastCenterX = (controlsRef.current.touches[0].clientX + controlsRef.current.touches[1].clientX) / 2
       const lastCenterY = (controlsRef.current.touches[0].clientY + controlsRef.current.touches[1].clientY) / 2
-      
       controlsRef.current.panX += (centerX - lastCenterX) * 0.005
       controlsRef.current.panY -= (centerY - lastCenterY) * 0.005
     }
-
     controlsRef.current.touches = touches
   }
+  const handleTouchEnd = () => (controlsRef.current.touches = [])
+  const handleContextMenu = (e) => e.preventDefault()
 
-  const handleTouchEnd = () => {
-    controlsRef.current.touches = []
-  }
-
-  const handleContextMenu = (e) => {
-    e.preventDefault()
-  }
-
+  /* ---------- 6.  View helpers ---------- */
   const resetView = () => {
     controlsRef.current.rotationX = 0
     controlsRef.current.rotationY = 0
@@ -419,71 +240,44 @@ export default function STLViewerModal({ project, onClose }) {
     controlsRef.current.zoom = 5
     controlsRef.current.viewState = { x: 0, y: 0, z: 0 }
   }
-
-  // Axis view functions
   const setViewX = () => {
-    const currentState = controlsRef.current.viewState.x
-    if (currentState === 0) {
-      // +X view (looking down X axis)
-      controlsRef.current.rotationX = 0
-      controlsRef.current.rotationY = Math.PI / 2
-      controlsRef.current.viewState.x = 1
-    } else {
-      // -X view
-      controlsRef.current.rotationX = 0
-      controlsRef.current.rotationY = -Math.PI / 2
-      controlsRef.current.viewState.x = 0
-    }
+    const s = controlsRef.current.viewState.x
+    controlsRef.current.rotationX = 0
+    controlsRef.current.rotationY = s === 0 ? Math.PI / 2 : -Math.PI / 2
+    controlsRef.current.viewState.x = 1 - s
     controlsRef.current.panX = 0
     controlsRef.current.panY = 0
   }
-
   const setViewY = () => {
-    const currentState = controlsRef.current.viewState.y
-    if (currentState === 0) {
-      // +Y view (looking down Y axis)
-      controlsRef.current.rotationX = -Math.PI / 2
-      controlsRef.current.rotationY = 0
-      controlsRef.current.viewState.y = 1
-    } else {
-      // -Y view
-      controlsRef.current.rotationX = Math.PI / 2
-      controlsRef.current.rotationY = 0
-      controlsRef.current.viewState.y = 0
-    }
+    const s = controlsRef.current.viewState.y
+    controlsRef.current.rotationX = s === 0 ? -Math.PI / 2 : Math.PI / 2
+    controlsRef.current.rotationY = 0
+    controlsRef.current.viewState.y = 1 - s
     controlsRef.current.panX = 0
     controlsRef.current.panY = 0
   }
-
   const setViewZ = () => {
-    const currentState = controlsRef.current.viewState.z
-    if (currentState === 0) {
-      // +Z view (front view)
-      controlsRef.current.rotationX = 0
-      controlsRef.current.rotationY = 0
-      controlsRef.current.viewState.z = 1
-    } else {
-      // -Z view (back view)
-      controlsRef.current.rotationX = 0
-      controlsRef.current.rotationY = Math.PI
-      controlsRef.current.viewState.z = 0
-    }
+    const s = controlsRef.current.viewState.z
+    controlsRef.current.rotationX = 0
+    controlsRef.current.rotationY = s === 0 ? 0 : Math.PI
+    controlsRef.current.viewState.z = 1 - s
     controlsRef.current.panX = 0
     controlsRef.current.panY = 0
   }
 
+  /* ---------- 7.  Download ---------- */
   const handleDownload = () => {
-    const link = window.document.createElement('a')
-    link.href = project.stlFile
-    link.download = project.title || 'model.stl'
-    link.click()
+    const a = document.createElement('a')
+    a.href = project.stlFile
+    a.download = project.title?.replace(/\s+/g, '_') + '.' + project.stlFile.split('.').pop() || 'model.stl'
+    a.click()
   }
 
+  /* ---------- 8.  UI (unchanged) ---------- */
   if (!project) return null
 
   return (
     <>
-      {/* Unavailable Popup */}
       {showUnavailablePopup && (
         <div
           style={{
@@ -516,7 +310,6 @@ export default function STLViewerModal({ project, onClose }) {
               textAlign: 'center'
             }}
           >
-            {/* Icon */}
             <div style={{
               width: '80px',
               height: '80px',
@@ -533,8 +326,6 @@ export default function STLViewerModal({ project, onClose }) {
                 <line x1="12" y1="16" x2="12.01" y2="16"/>
               </svg>
             </div>
-
-            {/* Title */}
             <h2 style={{
               fontSize: '1.5rem',
               fontWeight: '700',
@@ -544,8 +335,6 @@ export default function STLViewerModal({ project, onClose }) {
             }}>
               Model Unavailable
             </h2>
-
-            {/* Message */}
             <p style={{
               fontSize: '1rem',
               lineHeight: '1.6',
@@ -558,8 +347,6 @@ export default function STLViewerModal({ project, onClose }) {
               I temporarily lack access to the software licenses required to export and showcase these models.
               I'm working to restore access to provide you with the full interactive experience.
             </p>
-
-            {/* Button */}
             <button
               onClick={() => {
                 setShowUnavailablePopup(false)
@@ -592,7 +379,6 @@ export default function STLViewerModal({ project, onClose }) {
         </div>
       )}
 
-      {/* Main STL Viewer */}
       {!showUnavailablePopup && (
         <div
           style={{
@@ -609,7 +395,6 @@ export default function STLViewerModal({ project, onClose }) {
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          {/* Backdrop */}
           <div
             style={{
               position: 'absolute',
@@ -618,8 +403,6 @@ export default function STLViewerModal({ project, onClose }) {
               backdropFilter: 'blur(8px)'
             }}
           />
-
-          {/* Control Panel - Top */}
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -638,7 +421,6 @@ export default function STLViewerModal({ project, onClose }) {
               animation: 'slideDown 0.4s ease'
             }}
           >
-            {/* Document Name */}
             <div style={{
               padding: '0 1rem',
               display: 'flex',
@@ -654,8 +436,6 @@ export default function STLViewerModal({ project, onClose }) {
             }}>
               {project.title || 'CAD Model'}
             </div>
-
-            {/* Axis View Buttons */}
             <button
               onClick={setViewX}
               style={{
@@ -678,7 +458,6 @@ export default function STLViewerModal({ project, onClose }) {
             >
               X
             </button>
-
             <button
               onClick={setViewY}
               style={{
@@ -701,7 +480,6 @@ export default function STLViewerModal({ project, onClose }) {
             >
               Y
             </button>
-
             <button
               onClick={setViewZ}
               style={{
@@ -724,16 +502,12 @@ export default function STLViewerModal({ project, onClose }) {
             >
               Z
             </button>
-
-            {/* Divider */}
             <div style={{
               width: '1px',
               height: '40px',
               background: 'rgba(255, 255, 255, 0.2)',
               margin: '0 0.25rem'
             }} />
-
-            {/* Reset View */}
             <button
               onClick={resetView}
               style={{
@@ -756,16 +530,12 @@ export default function STLViewerModal({ project, onClose }) {
                 <path d="M12 7V12L15 15" stroke="white" strokeWidth="2" strokeLinecap="round"/>
               </svg>
             </button>
-
-            {/* Divider */}
             <div style={{
               width: '1px',
               height: '40px',
               background: 'rgba(255, 255, 255, 0.2)',
               margin: '0 0.25rem'
             }} />
-
-            {/* Download Button */}
             <button
               onClick={handleDownload}
               style={{
@@ -790,8 +560,6 @@ export default function STLViewerModal({ project, onClose }) {
               </svg>
             </button>
           </div>
-
-          {/* Close Button - Top Right */}
           <button
             onClick={onClose}
             style={{
@@ -819,8 +587,6 @@ export default function STLViewerModal({ project, onClose }) {
               <path d="M18 6L6 18M6 6L18 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
-
-          {/* Document Content */}
           <div
             ref={containerRef}
             onClick={(e) => e.stopPropagation()}
@@ -852,12 +618,10 @@ export default function STLViewerModal({ project, onClose }) {
                 fontSize: '1.2rem',
                 color: '#fff'
               }}>
-                Loading 3D model...
+                Loading 3-D model...
               </div>
             )}
           </div>
-
-          {/* Help Text - Bottom */}
           <div
             style={{
               position: 'absolute',
@@ -913,7 +677,6 @@ export default function STLViewerModal({ project, onClose }) {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-
         @keyframes slideDown {
           from {
             opacity: 0;
@@ -924,7 +687,6 @@ export default function STLViewerModal({ project, onClose }) {
             transform: translateX(-50%) translateY(0);
           }
         }
-
         @keyframes slideUp {
           from {
             opacity: 0;
@@ -935,16 +697,125 @@ export default function STLViewerModal({ project, onClose }) {
             transform: translateX(-50%) translateY(0);
           }
         }
-
         .control-button:not(:disabled):hover {
           background: rgba(255, 255, 255, 0.2) !important;
           transform: scale(1.05);
         }
-
         .control-button:not(:disabled):active {
           transform: scale(0.95);
         }
       `}</style>
     </>
   )
+}
+
+/* -------------------------------------------------- */
+/* Helper: load STL loader (inline, same as before)   */
+/* -------------------------------------------------- */
+async function loadSTLLoader(THREE) {
+  if (THREE.STLLoader) return
+  THREE.STLLoader = function () {
+    this.manager = THREE.DefaultLoadingManager
+  }
+  THREE.STLLoader.prototype.load = function (url, onLoad, onProgress, onError) {
+    const scope = this
+    const loader = new THREE.FileLoader(this.manager)
+    loader.setResponseType('arraybuffer')
+    loader.load(
+      url,
+      function (data) {
+        try {
+          onLoad(scope.parse(data))
+        } catch (e) {
+          onError?.(e)
+          scope.manager.itemError(url)
+        }
+      },
+      onProgress,
+      onError
+    )
+  }
+  THREE.STLLoader.prototype.parse = function (data) {
+    function isBinary(buffer) {
+      const reader = new DataView(buffer)
+      const numFaces = reader.getUint32(80, true)
+      const faceSize = (32 / 8) * 3 + ((32 / 8) * 3) * 3 + 16 / 8
+      const expect = 80 + 4 + numFaces * faceSize
+      return expect === reader.byteLength
+    }
+    function parseBinary(buffer) {
+      const reader = new DataView(buffer)
+      const faces = reader.getUint32(80, true)
+      const geometry = new THREE.BufferGeometry()
+      const vertices = new Float32Array(faces * 3 * 3)
+      const normals = new Float32Array(faces * 3 * 3)
+      for (let f = 0; f < faces; f++) {
+        const start = 84 + f * 50
+        const nx = reader.getFloat32(start, true)
+        const ny = reader.getFloat32(start + 4, true)
+        const nz = reader.getFloat32(start + 8, true)
+        for (let i = 1; i <= 3; i++) {
+          const vs = start + i * 12
+          const idx = (f * 3 * 3) + (i - 1) * 3
+          vertices[idx] = reader.getFloat32(vs, true)
+          vertices[idx + 1] = reader.getFloat32(vs + 4, true)
+          vertices[idx + 2] = reader.getFloat32(vs + 8, true)
+          normals[idx] = nx
+          normals[idx + 1] = ny
+          normals[idx + 2] = nz
+        }
+      }
+      geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+      geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
+      return geometry
+    }
+    function parseASCII(data) {
+      const patternFace = /facet([\s\S]*?)endfacet/g
+      let faceCount = 0
+      let res
+      while ((res = patternFace.exec(data)) !== null) faceCount++
+      const vertices = new Float32Array(faceCount * 3 * 3)
+      const normals = new Float32Array(faceCount * 3 * 3)
+      const patternNormal = /normal\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)/g
+      const patternVertex = /vertex\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)\s+([\-+]?[0-9]+\.?[0-9]*([eE][\-+]?[0-9]+)?)/g
+      patternFace.lastIndex = 0
+      let vCounter = 0
+      let face
+      while ((face = patternFace.exec(data)) !== null) {
+        const block = face[0]
+        patternNormal.lastIndex = 0
+        const n = patternNormal.exec(block)
+        const normal = new THREE.Vector3(parseFloat(n[1]), parseFloat(n[3]), parseFloat(n[5]))
+        patternVertex.lastIndex = 0
+        let vert
+        while ((vert = patternVertex.exec(block)) !== null) {
+          vertices[vCounter] = parseFloat(vert[1])
+          vertices[vCounter + 1] = parseFloat(vert[3])
+          vertices[vCounter + 2] = parseFloat(vert[5])
+          normals[vCounter] = normal.x
+          normals[vCounter + 1] = normal.y
+          normals[vCounter + 2] = normal.z
+          vCounter += 3
+        }
+      }
+      const geometry = new THREE.BufferGeometry()
+      geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
+      geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
+      return geometry
+    }
+    let buf = data instanceof ArrayBuffer ? data : new TextEncoder().encode(data).buffer
+    const isBin = isBinary(buf)
+    const geom = isBin ? parseBinary(buf) : parseASCII(new TextDecoder().decode(buf))
+    return geom
+  }
+}
+
+/* -------------------------------------------------- */
+/* Helper: load STEP loader (three-stdlib)            */
+/* -------------------------------------------------- */
+async function loadSTPLoader(THREE) {
+  if (THREE.STPLoader) return          // already attached
+
+  const { CADLoader } = await import('three-stdlib')
+  THREE.STPLoader = CADLoader          // alias → keeps the rest of the code intact
 }
