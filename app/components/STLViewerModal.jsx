@@ -390,7 +390,7 @@ export default function CADViewerModal({ project, onClose }) {
             <p style={{ fontSize:'1rem', lineHeight:'1.6', color:'rgba(255,255,255,.8)', marginBottom:'1.5rem' }}>
               This 3D model is currently unavailable. As a student who transitioned between institutions,
               I temporarily lack access to the software licenses required to export and showcase these models.
-              I&apos;m working to restore access to provide you with the full interactive experience.
+              I'm working to restore access to provide you with the full interactive experience.
             </p>
             <button
               onClick={() => { setShowPopup(false); onClose() }}
