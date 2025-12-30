@@ -13,9 +13,9 @@ export default function STEPViewerModal({ project, onClose }) {
   const [occtReady, setOcctReady] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(0)
+  const [loadingMessage, setLoadingMessage] = useState('Initializing...')
   const [error, setError] = useState(null)
   const [showPopup, setShowPopup] = useState(false)
-  const [transparentMode, setTransparentMode] = useState(false)
 
   const ctrlRef = useRef({
     isRotating: false, isPanning: false, lastX: 0, lastY: 0,
@@ -28,14 +28,31 @@ export default function STEPViewerModal({ project, onClose }) {
     if (typeof window === 'undefined') return
     if (window.THREE) {
       setThreeReady(true)
+      setLoadingMessage('3D engine loaded')
+      setLoadingProgress(20)
       return
     }
 
+    setLoadingMessage('Loading 3D engine...')
     const script = document.createElement('script')
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
-    script.onload = () => setThreeReady(true)
-    script.onerror = () => setError('Could not load Three.js')
+    script.onload = () => {
+      setThreeReady(true)
+      setLoadingMessage('3D engine ready')
+      setLoadingProgress(20)
+    }
+    script.onerror = () => {
+      setError('Could not load 3D rendering engine')
+      setShowPopup(true)
+    }
     document.head.appendChild(script)
+    
+    setTimeout(() => {
+      if (!window.THREE) {
+        setError('3D engine loading timed out')
+        setShowPopup(true)
+      }
+    }, 15000)
   }, [])
 
   // Load OpenCascade for STEP/IGES files
@@ -52,32 +69,49 @@ export default function STEPViewerModal({ project, onClose }) {
   const loadOpenCascade = () => {
     if (window.occt) {
       setOcctReady(true)
+      setLoadingMessage('CAD parser ready')
       return
     }
 
-    setLoadingProgress(10)
+    setLoadingProgress(25)
+    setLoadingMessage('Loading CAD parser (this may take a moment)...')
+    
     const script = document.createElement('script')
     script.src = 'https://cdn.jsdelivr.net/npm/opencascade.js@2.0.0-beta.2/dist/opencascade.wasm.js'
     script.onload = async () => {
       try {
-        setLoadingProgress(30)
+        setLoadingProgress(40)
+        setLoadingMessage('Initializing CAD parser...')
+        
         const OCC = await window.opencascade({
           locateFile: () => 'https://cdn.jsdelivr.net/npm/opencascade.js@2.0.0-beta.2/dist/opencascade.wasm.wasm'
         })
+        
         window.occt = OCC
-        setLoadingProgress(50)
+        setLoadingProgress(60)
+        setLoadingMessage('CAD parser ready')
         setOcctReady(true)
       } catch (err) {
         console.error('OpenCascade init error:', err)
-        setError('CAD parser initialization failed')
+        setError('Failed to initialize CAD parser')
         setShowPopup(true)
+        setIsLoading(false)
       }
     }
     script.onerror = () => {
-      setError('Could not load CAD parser library')
+      setError('Could not download CAD parser library')
       setShowPopup(true)
+      setIsLoading(false)
     }
     document.head.appendChild(script)
+    
+    setTimeout(() => {
+      if (!window.occt) {
+        setError('CAD parser loading timed out')
+        setShowPopup(true)
+        setIsLoading(false)
+      }
+    }, 30000)
   }
 
   // Scene setup
@@ -104,7 +138,6 @@ export default function STEPViewerModal({ project, onClose }) {
     containerRef.current.appendChild(renderer.domElement)
     rendererRef.current = renderer
 
-    // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.6))
     const d1 = new THREE.DirectionalLight(0xffffff, 0.8)
     d1.position.set(5, 5, 5)
@@ -114,12 +147,10 @@ export default function STEPViewerModal({ project, onClose }) {
     scene.add(d2)
     scene.add(new THREE.GridHelper(10, 10, 0x444444, 0x222222))
 
-    // Camera controls
     ctrlRef.current.target = new THREE.Vector3()
     ctrlRef.current.spherical = new THREE.Spherical(5, Math.PI / 3, Math.PI / 4)
     ctrlRef.current.panOffset = new THREE.Vector3()
 
-    // Load model
     const file = project.stepFile
     const ext = file.split('?')[0].split('.').pop().toLowerCase()
     
@@ -131,7 +162,6 @@ export default function STEPViewerModal({ project, onClose }) {
       setShowPopup(true)
     }
 
-    // Resize
     const onResize = () => {
       if (!containerRef.current) return
       cam.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight
@@ -140,7 +170,6 @@ export default function STEPViewerModal({ project, onClose }) {
     }
     window.addEventListener('resize', onResize)
 
-    // Animation loop
     const animate = () => {
       animationRef.current = requestAnimationFrame(animate)
       updateCamera()
@@ -159,33 +188,31 @@ export default function STEPViewerModal({ project, onClose }) {
     }
   }, [project, threeReady, occtReady])
 
-  // STEP Loader
   async function loadSTEP(url) {
     try {
-      setLoadingProgress(60)
+      setLoadingProgress(65)
+      setLoadingMessage('Downloading STEP file...')
       const response = await fetch(url)
       const buffer = await response.arrayBuffer()
       setLoadingProgress(75)
+      setLoadingMessage('Parsing STEP geometry...')
       
       const occt = window.occt
       const fileBuffer = new Uint8Array(buffer)
       
-      // Write to virtual filesystem
       occt.FS.createDataFile('/', 'model.step', fileBuffer, true, true, true)
       
-      // Read STEP file
       const reader = new occt.STEPControl_Reader_1()
       reader.ReadFile('model.step')
       reader.TransferRoots()
       const shape = reader.OneShape()
       
       setLoadingProgress(85)
+      setLoadingMessage('Creating 3D mesh...')
       
-      // Tessellate
       const mesh = tessellateShape(shape)
       finishMesh(mesh)
       
-      // Cleanup
       occt.FS.unlink('/model.step')
     } catch (err) {
       console.error('STEP load error:', err)
@@ -195,13 +222,14 @@ export default function STEPViewerModal({ project, onClose }) {
     }
   }
 
-  // IGES Loader
   async function loadIGES(url) {
     try {
-      setLoadingProgress(60)
+      setLoadingProgress(65)
+      setLoadingMessage('Downloading IGES file...')
       const response = await fetch(url)
       const buffer = await response.arrayBuffer()
       setLoadingProgress(75)
+      setLoadingMessage('Parsing IGES geometry...')
       
       const occt = window.occt
       const fileBuffer = new Uint8Array(buffer)
@@ -214,6 +242,7 @@ export default function STEPViewerModal({ project, onClose }) {
       const shape = reader.OneShape()
       
       setLoadingProgress(85)
+      setLoadingMessage('Creating 3D mesh...')
       
       const mesh = tessellateShape(shape)
       finishMesh(mesh)
@@ -227,7 +256,6 @@ export default function STEPViewerModal({ project, onClose }) {
     }
   }
 
-  // Tessellate CAD shape to mesh
   function tessellateShape(shape) {
     const THREE = window.THREE
     const occt = window.occt
@@ -246,9 +274,7 @@ export default function STEPViewerModal({ project, onClose }) {
       
       if (triangulation.IsNull()) continue
       
-      const nodeCount = triangulation.get().NbNodes()
       const triCount = triangulation.get().NbTriangles()
-      
       const transform = location.Transformation()
       const oriented = face.Orientation_1() === occt.TopAbs_REVERSED
       
@@ -264,7 +290,6 @@ export default function STEPViewerModal({ project, onClose }) {
           return [transformed.X(), transformed.Y(), transformed.Z()]
         })
         
-        // Calculate normal
         const v1 = [pts[1][0] - pts[0][0], pts[1][1] - pts[0][1], pts[1][2] - pts[0][2]]
         const v2 = [pts[2][0] - pts[0][0], pts[2][1] - pts[0][1], pts[2][2] - pts[0][2]]
         const normal = [
@@ -291,7 +316,6 @@ export default function STEPViewerModal({ project, onClose }) {
     return geo
   }
 
-  // Finish mesh setup
   function finishMesh(geo) {
     const THREE = window.THREE
     
@@ -306,15 +330,10 @@ export default function STEPViewerModal({ project, onClose }) {
     const scale = 2 / maxDim
     geo.scale(scale, scale, scale)
 
-    const isTransparent = project.transparent || transparentMode
-    const opacity = project.opacity || (isTransparent ? 0.7 : 1.0)
-
     const mat = new THREE.MeshPhongMaterial({
       color: new THREE.Color(project.color || '#ff6b35'),
       specular: 0x111111,
       shininess: 200,
-      transparent: isTransparent,
-      opacity: opacity,
       side: THREE.DoubleSide,
       flatShading: false
     })
@@ -324,6 +343,7 @@ export default function STEPViewerModal({ project, onClose }) {
     meshRef.current = mesh
     setIsLoading(false)
     setLoadingProgress(100)
+    setLoadingMessage('Model loaded!')
   }
 
   const updateCamera = () => {
@@ -374,81 +394,11 @@ export default function STEPViewerModal({ project, onClose }) {
 
   const handleContextMenu = e => e.preventDefault()
 
-  const handleTouchStart = e => {
-    ctrlRef.current.touches = Array.from(e.touches)
-  }
-
-  const handleTouchMove = e => {
-    e.preventDefault()
-    const c = ctrlRef.current
-    const touches = Array.from(e.touches)
-    const prev = c.touches
-    if (touches.length === 1 && prev.length === 1) {
-      const dx = touches[0].clientX - prev[0].clientX
-      const dy = touches[0].clientY - prev[0].clientY
-      c.spherical.theta -= dx * 0.01
-      c.spherical.phi = window.THREE.MathUtils.clamp(c.spherical.phi + dy * 0.01, 0.1, Math.PI - 0.1)
-    } else if (touches.length === 2 && prev.length === 2) {
-      const cur = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY)
-      const p = Math.hypot(prev[0].clientX - prev[1].clientX, prev[0].clientY - prev[1].clientY)
-      c.spherical.radius = Math.max(1, Math.min(20, c.spherical.radius - (cur - p) * 0.01))
-
-      const cx = (touches[0].clientX + touches[1].clientX) / 2
-      const cy = (touches[0].clientY + touches[1].clientY) / 2
-      const pcx = (prev[0].clientX + prev[1].clientX) / 2
-      const pcy = (prev[0].clientY + prev[1].clientY) / 2
-      const pan = new window.THREE.Vector3()
-      pan.copy(cameraRef.current.position).sub(c.target).normalize()
-      pan.cross(cameraRef.current.up).setLength((cx - pcx) * 0.005)
-      pan.addScaledVector(cameraRef.current.up, (cy - pcy) * 0.005)
-      c.panOffset.add(pan)
-    }
-    c.touches = touches
-  }
-
-  const handleTouchEnd = () => {
-    ctrlRef.current.touches = []
-  }
-
   const resetView = () => {
     ctrlRef.current.spherical.set(5, Math.PI / 3, Math.PI / 4)
     ctrlRef.current.target.set(0, 0, 0)
     ctrlRef.current.panOffset.set(0, 0, 0)
     ctrlRef.current.viewState = { x: 0, y: 0, z: 0 }
-  }
-
-  const fitToScreen = () => {
-    if (!meshRef.current) return
-    const box = new window.THREE.Box3().setFromObject(meshRef.current)
-    const center = box.getCenter(new window.THREE.Vector3())
-    const size = box.getSize(new window.THREE.Vector3())
-    const maxDim = Math.max(size.x, size.y, size.z)
-    const fov = cameraRef.current.fov * Math.PI / 180
-    const dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.3
-    ctrlRef.current.target.copy(center)
-    ctrlRef.current.spherical.radius = dist
-    ctrlRef.current.panOffset.set(0, 0, 0)
-  }
-
-  const setViewX = () => {
-    const s = ctrlRef.current.viewState.x
-    ctrlRef.current.spherical.theta = s ? -Math.PI / 2 : Math.PI / 2
-    ctrlRef.current.spherical.phi = Math.PI / 2
-    ctrlRef.current.viewState.x = 1 - s
-  }
-
-  const setViewY = () => {
-    const s = ctrlRef.current.viewState.y
-    ctrlRef.current.spherical.theta = 0
-    ctrlRef.current.spherical.phi = s ? Math.PI / 2 : -Math.PI / 2
-    ctrlRef.current.viewState.y = 1 - s
-  }
-
-  const setViewZ = () => {
-    const s = ctrlRef.current.viewState.z
-    ctrlRef.current.spherical.theta = s ? Math.PI : 0
-    ctrlRef.current.spherical.phi = Math.PI / 2
-    ctrlRef.current.viewState.z = 1 - s
   }
 
   const handleDownload = () => {
@@ -498,21 +448,53 @@ export default function STEPViewerModal({ project, onClose }) {
               {error || 'Model Unavailable'}
             </h2>
             <p style={{ fontSize: '1rem', lineHeight: '1.6', color: 'rgba(255,255,255,.8)', marginBottom: '1.5rem' }}>
-              {error === 'CAD parser initialization failed' 
-                ? 'The CAD file parser could not be initialized. This may be due to browser compatibility issues.'
-                : 'Unable to load the 3D model. Please check the file format and try again.'}
+              {error || 'Unable to load the 3D model in your browser.'}
+              <br/><br/>
+              <strong>You can download the file to view it in CAD software like:</strong>
+              <br/>
+              • FreeCAD (free, open-source)
+              <br/>
+              • Autodesk Fusion 360 (free for hobbyists)
+              <br/>
+              • SolidWorks, CATIA, or other professional CAD tools
             </p>
-            <button
-              onClick={() => { setShowPopup(false); onClose() }}
-              style={{
-                padding: '.875rem 2rem',
-                background: 'linear-gradient(135deg,rgba(255,100,100,.8),rgba(255,100,100,.6))',
-                color: '#fff', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600',
-                cursor: 'pointer', transition: 'all .2s ease', width: '100%'
-              }}
-            >
-              Got it
-            </button>
+            
+            <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
+              <button
+                onClick={() => {
+                  const a = document.createElement('a')
+                  a.href = project.stepFile
+                  a.download = `${project.title}.${project.stepFile.split('.').pop()}`
+                  a.click()
+                }}
+                style={{
+                  padding: '.875rem 2rem',
+                  background: 'linear-gradient(135deg, hsl(30, 100%, 60%), hsl(30, 100%, 70%))',
+                  color: '#0a0e1a', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600',
+                  cursor: 'pointer', transition: 'all .2s ease', width: '100%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" 
+                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Download CAD File
+              </button>
+              
+              <button
+                onClick={() => { setShowPopup(false); onClose() }}
+                style={{
+                  padding: '.875rem 2rem',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: '#fff', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '12px', 
+                  fontSize: '1rem', fontWeight: '600',
+                  cursor: 'pointer', transition: 'all .2s ease', width: '100%'
+                }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -530,7 +512,6 @@ export default function STEPViewerModal({ project, onClose }) {
         >
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.95)', backdropFilter: 'blur(8px)' }} />
 
-          {/* Control bar */}
           <div
             onClick={e => e.stopPropagation()}
             style={{
@@ -548,29 +529,6 @@ export default function STEPViewerModal({ project, onClose }) {
               {project.title || 'CAD Model'}
             </div>
 
-            <button onClick={setViewX} title="View X axis" style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(255,100,100,.2)', border: '1px solid rgba(255,100,100,.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '.85rem', fontWeight: '700', color: '#ff6464', cursor: 'pointer'
-            }}>X</button>
-
-            <button onClick={setViewY} title="View Y axis" style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(100,255,100,.2)', border: '1px solid rgba(100,255,100,.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '.85rem', fontWeight: '700', color: '#64ff64', cursor: 'pointer'
-            }}>Y</button>
-
-            <button onClick={setViewZ} title="View Z axis" style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(100,100,255,.2)', border: '1px solid rgba(100,255,255,.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '.85rem', fontWeight: '700', color: '#6464ff', cursor: 'pointer'
-            }}>Z</button>
-
-            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,.2)', margin: '0 .25rem' }} />
-
             <button onClick={resetView} title="Reset View" style={{
               width: '40px', height: '40px', borderRadius: '10px',
               background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
@@ -579,17 +537,6 @@ export default function STEPViewerModal({ project, onClose }) {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M3 12a9 9 0 109 9 9 9 0 00-9-9z" stroke="white" strokeWidth="2" />
                 <path d="M12 7v5l3 3" stroke="white" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-
-            <button onClick={fitToScreen} title="Fit to Screen" style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M9 9l6 6m0-6l-6 6" />
               </svg>
             </button>
 
@@ -606,7 +553,6 @@ export default function STEPViewerModal({ project, onClose }) {
             </button>
           </div>
 
-          {/* Close button */}
           <button
             onClick={onClose}
             title="Close (Esc)"
@@ -624,15 +570,11 @@ export default function STEPViewerModal({ project, onClose }) {
             </svg>
           </button>
 
-          {/* Canvas container */}
           <div
             ref={containerRef}
             onClick={e => e.stopPropagation()}
             onWheel={handleWheel}
             onMouseDown={handleMouseDown}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
             onContextMenu={handleContextMenu}
             style={{
               position: 'relative', width: '90%', height: '90%',
@@ -646,13 +588,26 @@ export default function STEPViewerModal({ project, onClose }) {
               <div style={{
                 position: 'absolute', inset: 0, display: 'flex',
                 flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.2rem', color: '#fff', gap: '1rem'
+                fontSize: '1.2rem', color: '#fff', gap: '1.5rem',
+                background: 'rgba(10, 14, 26, 0.95)'
               }}>
-                <div>Loading CAD model...</div>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  border: '4px solid rgba(255, 255, 255, 0.1)',
+                  borderTop: '4px solid hsl(30, 100%, 60%)',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                
+                <div style={{ textAlign: 'center', maxWidth: '300px' }}>
+                  {loadingMessage}
+                </div>
+                
                 {loadingProgress > 0 && (
                   <div style={{
-                    width: '200px', height: '4px', background: 'rgba(255,255,255,.1)',
-                    borderRadius: '2px', overflow: 'hidden'
+                    width: '300px', height: '6px', background: 'rgba(255,255,255,.1)',
+                    borderRadius: '3px', overflow: 'hidden'
                   }}>
                     <div style={{
                       width: `${loadingProgress}%`, height: '100%',
@@ -661,11 +616,21 @@ export default function STEPViewerModal({ project, onClose }) {
                     }} />
                   </div>
                 )}
+                
+                <div style={{
+                  fontSize: '0.85rem',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  textAlign: 'center',
+                  maxWidth: '400px'
+                }}>
+                  {loadingProgress < 30 ? 'Initializing 3D viewer...' :
+                   loadingProgress < 60 ? 'Loading CAD parser (may take 10-20 seconds)...' :
+                   'Processing model geometry...'}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Help text */}
           <div
             style={{
               position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
@@ -686,6 +651,7 @@ export default function STEPViewerModal({ project, onClose }) {
         @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
         @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }
         @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }
+        @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
         button:hover { opacity: 0.8; transform: scale(1.05); transition: all 0.2s ease; }
         button:active { transform: scale(0.95); }
       `}</style>
