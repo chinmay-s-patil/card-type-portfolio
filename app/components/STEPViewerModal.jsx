@@ -66,7 +66,7 @@ export default function STEPViewerModal({ project, onClose }) {
     }
   }, [project])
 
-  const loadOpenCascade = () => {
+  const loadOpenCascade = async () => {
     if (window.occt) {
       setOcctReady(true)
       setLoadingMessage('CAD parser ready')
@@ -76,42 +76,43 @@ export default function STEPViewerModal({ project, onClose }) {
     setLoadingProgress(25)
     setLoadingMessage('Loading CAD parser (this may take a moment)...')
     
-    const script = document.createElement('script')
-    script.src = 'https://cdn.jsdelivr.net/npm/opencascade.js@2.0.0-beta.2/dist/opencascade.wasm.js'
-    script.onload = async () => {
-      try {
-        setLoadingProgress(40)
-        setLoadingMessage('Initializing CAD parser...')
-        
-        const OCC = await window.opencascade({
-          locateFile: () => 'https://cdn.jsdelivr.net/npm/opencascade.js@2.0.0-beta.2/dist/opencascade.wasm.wasm'
-        })
-        
-        window.occt = OCC
-        setLoadingProgress(60)
-        setLoadingMessage('CAD parser ready')
-        setOcctReady(true)
-      } catch (err) {
-        console.error('OpenCascade init error:', err)
-        setError('Failed to initialize CAD parser')
-        setShowPopup(true)
-        setIsLoading(false)
+    try {
+      setLoadingProgress(40)
+      setLoadingMessage('Initializing CAD parser...')
+      
+      // Dynamic import of the ES module
+      const opencascadeModule = await import('/opencascade/opencascade.js')
+      console.log('OpenCascade module loaded:', opencascadeModule)
+      
+      // Call the default export or the main function
+      const initOpenCascade = opencascadeModule.default || opencascadeModule
+      
+      if (typeof initOpenCascade !== 'function') {
+        throw new Error(`OpenCascade module did not export a function. Got: ${typeof initOpenCascade}`)
       }
-    }
-    script.onerror = () => {
-      setError('Could not download CAD parser library')
+      
+      setLoadingProgress(50)
+      setLoadingMessage('Loading WASM modules...')
+      
+      // Initialize with local WASM files
+      const OCC = await initOpenCascade({
+        locateFile: (path) => {
+          console.log('Loading WASM file:', path)
+          return `/opencascade/${path}`
+        }
+      })
+      
+      console.log('OpenCascade initialized:', OCC)
+      window.occt = OCC
+      setLoadingProgress(60)
+      setLoadingMessage('CAD parser ready')
+      setOcctReady(true)
+    } catch (err) {
+      console.error('OpenCascade init error:', err)
+      setError(`Failed to initialize CAD parser: ${err.message}. Check browser console for details.`)
       setShowPopup(true)
       setIsLoading(false)
     }
-    document.head.appendChild(script)
-    
-    setTimeout(() => {
-      if (!window.occt) {
-        setError('CAD parser loading timed out')
-        setShowPopup(true)
-        setIsLoading(false)
-      }
-    }, 30000)
   }
 
   // Scene setup
