@@ -80,15 +80,41 @@ export default function STEPViewerModal({ project, onClose }) {
       setLoadingProgress(40)
       setLoadingMessage('Initializing CAD parser...')
       
-      // Dynamic import of the ES module
-      const opencascadeModule = await import('/opencascade/opencascade.js')
-      console.log('OpenCascade module loaded:', opencascadeModule)
+      // Load the script dynamically from public folder
+      const script = document.createElement('script')
+      script.src = '/opencascade/opencascade.js'
+      script.type = 'text/javascript'
       
-      // Call the default export or the main function
-      const initOpenCascade = opencascadeModule.default || opencascadeModule
+      await new Promise((resolve, reject) => {
+        script.onload = resolve
+        script.onerror = () => reject(new Error('Failed to load OpenCascade script'))
+        document.head.appendChild(script)
+      })
       
-      if (typeof initOpenCascade !== 'function') {
-        throw new Error(`OpenCascade module did not export a function. Got: ${typeof initOpenCascade}`)
+      console.log('OpenCascade script loaded')
+      console.log('Window object keys:', Object.keys(window).filter(k => k.toLowerCase().includes('open')))
+      
+      // Wait a bit for the module to initialize
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Check for the opencascade function under various possible names
+      let initOpenCascade = null
+      
+      if (typeof window.opencascade === 'function') {
+        initOpenCascade = window.opencascade
+      } else if (typeof window.OpenCascade === 'function') {
+        initOpenCascade = window.OpenCascade
+      } else if (typeof window.initOpenCascade === 'function') {
+        initOpenCascade = window.initOpenCascade
+      } else if (window.Module && typeof window.Module === 'function') {
+        initOpenCascade = window.Module
+      }
+      
+      console.log('Found OpenCascade initializer:', initOpenCascade)
+      
+      if (!initOpenCascade) {
+        console.error('Available window properties:', Object.keys(window).slice(0, 50))
+        throw new Error('OpenCascade function not found. Available: ' + Object.keys(window).filter(k => k.toLowerCase().includes('open')).join(', '))
       }
       
       setLoadingProgress(50)
