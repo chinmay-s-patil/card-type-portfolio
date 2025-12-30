@@ -1,729 +1,515 @@
-"use client"
-import { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState } from "react";
+import * as THREE from "three";
 
-export default function STEPViewerModal({ project, onClose }) {
-  const containerRef = useRef(null)
-  const sceneRef = useRef(null)
-  const cameraRef = useRef(null)
-  const rendererRef = useRef(null)
-  const meshRef = useRef(null)
-  const animationRef = useRef(null)
+// STEPViewerModal.jsx
+// Enhanced to load opencascade via jsDelivr, be resilient to exported constructor suffixes,
+// and provide a transparency/outline toggle.
 
-  const [threeReady, setThreeReady] = useState(false)
-  const [occtReady, setOcctReady] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [loadingProgress, setLoadingProgress] = useState(0)
-  const [error, setError] = useState(null)
-  const [showPopup, setShowPopup] = useState(false)
+export default function STEPViewerModal({ isOpen, onClose, file }) {
+  const mountRef = useRef(null);
+  const sceneRef = useRef(null);
+  const rendererRef = useRef(null);
+  const cameraRef = useRef(null);
+  const meshRef = useRef(null);
+  const edgesRef = useRef(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const ctrlRef = useRef({
-    isRotating: false, isPanning: false, lastX: 0, lastY: 0,
-    target: null, spherical: null, panOffset: null, zoom: 5,
-    touches: [], viewState: { x: 0, y: 0, z: 0 }
-  })
+  // Transparent outline toggle
+  const [transparentMode, setTransparentMode] = useState(false);
 
-  // Load Three.js
+  // Load opencascade like STLViewerModal: inject jsDelivr script and use window.opencascade
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (window.THREE) {
-      setThreeReady(true)
-      return
+    if (!window.opencascade) {
+      const existing = document.querySelector('script[data-opencascade-loader]');
+      if (!existing) {
+        const script = document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/opencascade.js/opencascade.wasm.js";
+        script.async = true;
+        script.setAttribute("data-opencascade-loader", "true");
+        script.onload = () => {
+          console.log("opencascade script loaded, window.opencascade:", !!window.opencascade);
+          console.log("opencascade available keys:", Object.keys(window.opencascade || {}));
+        };
+        script.onerror = (e) => {
+          console.error("Failed to load opencascade script", e);
+          setError("Failed to load opencascade library (network error)");
+        };
+        document.body.appendChild(script);
+      } else {
+        // If script tag already present but opencascade still not available, we still log later
+        console.log("opencascade loader script already present");
+      }
+    } else {
+      console.log("opencascade already present on window");
+      console.log("opencascade available keys:", Object.keys(window.opencascade || {}));
     }
+  }, []);
 
-    const s = document.createElement('script')
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
-    s.onload = () => setThreeReady(true)
-    s.onerror = () => setError('Could not load Three.js')
-    document.head.appendChild(s)
-  }, [])
-
-  // Load OpenCascade for STEP files
-  useEffect(() => {
-    if (!project.stepFile) return
-    loadOpenCascade()
-  }, [project])
-
-  const loadOpenCascade = () => {
-    if (window.occt) {
-      setOcctReady(true)
-      return
+  // Helper to robustly get constructors/exports from window.opencascade
+  function getOcctCtor(baseName) {
+    if (!window.opencascade) return null;
+    const tries = ["", "_1", "_2", "_3"];
+    for (const s of tries) {
+      const name = baseName + s;
+      const v = window.opencascade[name];
+      if (typeof v === "function" || typeof v === "object") {
+        // return whatever's available (constructor function or namespace object)
+        return v;
+      }
     }
-
-    setLoadingProgress(10)
-    
-    // Load as ES module
-    const script = document.createElement('script')
-    script.type = 'module'
-    script.textContent = `
-      import opencascadeInit from '/opencascade/opencascade.js';
-      
-      opencascadeInit({
-        locateFile: (file) => '/opencascade/' + file
-      }).then((occt) => {
-        window.occt = occt;
-        window.dispatchEvent(new Event('opencascade-loaded'));
-      }).catch((err) => {
-        console.error('OpenCascade init error:', err);
-        window.dispatchEvent(new CustomEvent('opencascade-error', { detail: err }));
-      });
-    `
-    
-    const handleLoaded = () => {
-      setLoadingProgress(50)
-      setOcctReady(true)
-      cleanup()
-    }
-    
-    const handleError = (e) => {
-      console.error('OpenCascade error:', e.detail)
-      setError('CAD parser initialization failed')
-      setShowPopup(true)
-      cleanup()
-    }
-    
-    const cleanup = () => {
-      window.removeEventListener('opencascade-loaded', handleLoaded)
-      window.removeEventListener('opencascade-error', handleError)
-    }
-    
-    window.addEventListener('opencascade-loaded', handleLoaded)
-    window.addEventListener('opencascade-error', handleError)
-    
-    setLoadingProgress(30)
-    document.head.appendChild(script)
+    return null;
   }
 
-  // Scene setup
+  // Utility to clear existing scene objects
+  function clearScene() {
+    try {
+      if (sceneRef.current) {
+        while (sceneRef.current.children.length) {
+          const child = sceneRef.current.children[0];
+          sceneRef.current.remove(child);
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose());
+            else child.material.dispose();
+          }
+        }
+      }
+      meshRef.current = null;
+      if (edgesRef.current) {
+        edgesRef.current.geometry && edgesRef.current.geometry.dispose();
+        edgesRef.current = null;
+      }
+    } catch (e) {
+      console.warn("Error while clearing scene:", e);
+    }
+  }
+
+  // Initialize Three scene
   useEffect(() => {
-    if (!threeReady || !occtReady || !containerRef.current) return
-    
-    const THREE = window.THREE
-    document.body.style.overflow = 'hidden'
+    const mount = mountRef.current;
+    if (!mount) return;
 
-    const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x0a0e1a)
-    sceneRef.current = scene
+    const width = mount.clientWidth;
+    const height = mount.clientHeight;
 
-    const cam = new THREE.PerspectiveCamera(
-      45,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1, 1000
-    )
-    cameraRef.current = cam
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x222222);
+    sceneRef.current = scene;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight)
-    renderer.setPixelRatio(window.devicePixelRatio)
-    containerRef.current.appendChild(renderer.domElement)
-    rendererRef.current = renderer
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(3, 3, 3);
+    cameraRef.current = camera;
 
-    // Lights
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6))
-    const d1 = new THREE.DirectionalLight(0xffffff, 0.8)
-    d1.position.set(5, 5, 5)
-    scene.add(d1)
-    const d2 = new THREE.DirectionalLight(0xffffff, 0.4)
-    d2.position.set(-5, -5, -5)
-    scene.add(d2)
-    scene.add(new THREE.GridHelper(10, 10, 0x444444, 0x222222))
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(width, height);
+    rendererRef.current = renderer;
 
-    // Camera controls
-    ctrlRef.current.target = new THREE.Vector3()
-    ctrlRef.current.spherical = new THREE.Spherical(5, Math.PI / 3, Math.PI / 4)
-    ctrlRef.current.panOffset = new THREE.Vector3()
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambient);
+    const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir.position.set(5, 10, 7.5);
+    scene.add(dir);
 
-    // Load STEP model
-    const file = project.stepFile
-    const ext = file.split('?')[0].split('.').pop().toLowerCase()
-    
-    if (ext === 'step' || ext === 'stp') {
-      loadSTEP(file)
-    } else if (ext === 'igs' || ext === 'iges') {
-      loadIGES(file)
-    } else {
-      setError('Unsupported format. Only STEP/IGES files are supported.')
-      setIsLoading(false)
-      setShowPopup(true)
-    }
+    mount.appendChild(renderer.domElement);
 
-    // Resize
-    const onResize = () => {
-      if (!containerRef.current) return
-      cam.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight
-      cam.updateProjectionMatrix()
-      renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight)
-    }
-    window.addEventListener('resize', onResize)
-
-    // Animation loop
+    let raf = null;
     const animate = () => {
-      animationRef.current = requestAnimationFrame(animate)
-      updateCamera()
-      renderer.render(scene, cam)
-    }
-    animate()
+      raf = requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    };
+    animate();
 
     return () => {
-      document.body.style.overflow = ''
-      window.removeEventListener('resize', onResize)
-      animationRef.current && cancelAnimationFrame(animationRef.current)
-      if (rendererRef.current && containerRef.current) {
-        containerRef.current.removeChild(rendererRef.current.domElement)
-      }
-      rendererRef.current?.dispose()
-    }
-  }, [project, threeReady, occtReady])
+      cancelAnimationFrame(raf);
+      renderer.domElement && mount.removeChild(renderer.domElement);
+      clearScene();
+      renderer.dispose();
+    };
+  }, []);
 
-  // STEP Loader
-  async function loadSTEP(url) {
-    try {
-      setLoadingProgress(60)
-      const response = await fetch(url)
-      const buffer = await response.arrayBuffer()
-      setLoadingProgress(75)
-      
-      const occt = window.occt
-      const fileBuffer = new Uint8Array(buffer)
-      
-      // Ensure working directory exists
+  // Re-tessellate or adjust materials when transparentMode changes
+  useEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    if (!mesh.material) return;
+
+    if (transparentMode) {
+      mesh.material.transparent = true;
+      mesh.material.opacity = 0.15;
+      // create or show edges
+      if (!edgesRef.current) {
+        try {
+          const edgesGeom = new THREE.EdgesGeometry(mesh.geometry, 1e-3);
+          const mat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
+          const edges = new THREE.LineSegments(edgesGeom, mat);
+          edges.renderOrder = 999;
+          edgesRef.current = edges;
+          sceneRef.current && sceneRef.current.add(edges);
+        } catch (e) {
+          console.warn("Failed to create edges geometry:", e);
+        }
+      } else {
+        edgesRef.current.visible = true;
+      }
+    } else {
+      mesh.material.transparent = false;
+      mesh.material.opacity = 1.0;
+      if (edgesRef.current) edgesRef.current.visible = false;
+    }
+  }, [transparentMode]);
+
+  // Helper: create a Three mesh from geometry and add to scene
+  function addThreeMesh(geometry, materialOptions = { color: 0x888888 }) {
+    clearScene();
+    const mat = new THREE.MeshStandardMaterial({ ...materialOptions });
+    const mesh = new THREE.Mesh(geometry, mat);
+    meshRef.current = mesh;
+    sceneRef.current && sceneRef.current.add(mesh);
+    // compute bounding and adjust camera
+    geometry.computeBoundingSphere && geometry.computeBoundingSphere();
+    const bs = geometry.boundingSphere;
+    if (bs && cameraRef.current) {
+      const r = bs.radius;
+      cameraRef.current.position.set(r * 3, r * 3, r * 3);
+      cameraRef.current.lookAt(bs.center);
+    }
+    // edges initially hidden unless transparentMode
+    if (transparentMode) {
       try {
-        occt.FS.mkdir('/working')
+        const edgesGeom = new THREE.EdgesGeometry(geometry, 1e-3);
+        const mat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 1 });
+        const edges = new THREE.LineSegments(edgesGeom, mat);
+        edges.renderOrder = 999;
+        edgesRef.current = edges;
+        sceneRef.current && sceneRef.current.add(edges);
       } catch (e) {
-        // Directory might already exist
+        console.warn("Failed to create initial edges:", e);
       }
-      
-      const filename = '/working/model.step'
-      
-      // Remove file if it exists
-      try {
-        occt.FS.unlink(filename)
-      } catch (e) {
-        // File doesn't exist yet
-      }
-      
-      // Write to virtual filesystem
-      occt.FS.writeFile(filename, fileBuffer)
-      
-      // Read STEP file - correct constructor name
-      const reader = new occt.STEPControl_Reader_1()
-      const status = reader.ReadFile(filename)
-      
-      if (status !== occt.IFSelect_RetDone) {
-        throw new Error('Failed to read STEP file - status: ' + status)
-      }
-      
-      reader.TransferRoots()
-      const shape = reader.OneShape()
-      
-      setLoadingProgress(85)
-      
-      // Tessellate
-      const mesh = tessellateShape(shape)
-      finishMesh(mesh)
-      
-      // Cleanup
-      try {
-        occt.FS.unlink(filename)
-      } catch (e) {
-        // Ignore cleanup errors
-      }
-    } catch (err) {
-      console.error('STEP load error:', err)
-      setError('STEP file could not be loaded: ' + err.message)
-      setIsLoading(false)
-      setShowPopup(true)
     }
   }
 
-  // IGES Loader
-  async function loadIGES(url) {
-    try {
-      setLoadingProgress(60)
-      const response = await fetch(url)
-      const buffer = await response.arrayBuffer()
-      setLoadingProgress(75)
-      
-      const occt = window.occt
-      const fileBuffer = new Uint8Array(buffer)
-      
-      occt.FS.createDataFile('/', 'model.igs', fileBuffer, true, true, true)
-      
-      const reader = new occt.IGESControl_Reader_1()
-      reader.ReadFile('model.igs')
-      reader.TransferRoots()
-      const shape = reader.OneShape()
-      
-      setLoadingProgress(85)
-      
-      const mesh = tessellateShape(shape)
-      finishMesh(mesh)
-      
-      occt.FS.unlink('/model.igs')
-    } catch (err) {
-      console.error('IGES load error:', err)
-      setError('IGES file could not be loaded')
-      setIsLoading(false)
-      setShowPopup(true)
-    }
-  }
-
-  // Tessellate CAD shape to mesh
+  // Tessellate OCCT shape into Three geometry
   function tessellateShape(shape) {
-    const THREE = window.THREE
-    const occt = window.occt
-    
-    const mesher = new occt.BRepMesh_IncrementalMesh_2(shape, 0.1, false, 0.1, false)
-    mesher.Perform()
-    
-    const vertices = []
-    const normals = []
-    
-    const explorer = new occt.TopExp_Explorer_1()
-    for (explorer.Init(shape, occt.TopAbs_FACE, occt.TopAbs_SHAPE); explorer.More(); explorer.Next()) {
-      const face = occt.TopoDS.Face_1(explorer.Current())
-      const location = new occt.TopLoc_Location_1()
-      const triangulation = occt.BRep_Tool.Triangulation(face, location)
-      
-      if (triangulation.IsNull()) continue
-      
-      const nodeCount = triangulation.get().NbNodes()
-      const triCount = triangulation.get().NbTriangles()
-      
-      const transform = location.Transformation()
-      const oriented = face.Orientation_1() === occt.TopAbs_REVERSED
-      
-      for (let i = 1; i <= triCount; i++) {
-        const tri = triangulation.get().Triangle(i)
-        const indices = [tri.Value(1), tri.Value(2), tri.Value(3)]
-        
-        if (oriented) indices.reverse()
-        
-        const pts = indices.map(idx => {
-          const node = triangulation.get().Node(idx)
-          const transformed = node.Transformed(transform)
-          return [transformed.X(), transformed.Y(), transformed.Z()]
-        })
-        
-        // Calculate normal
-        const v1 = [pts[1][0] - pts[0][0], pts[1][1] - pts[0][1], pts[1][2] - pts[0][2]]
-        const v2 = [pts[2][0] - pts[0][0], pts[2][1] - pts[0][1], pts[2][2] - pts[0][2]]
-        const normal = [
-          v1[1] * v2[2] - v1[2] * v2[1],
-          v1[2] * v2[0] - v1[0] * v2[2],
-          v1[0] * v2[1] - v1[1] * v2[0]
-        ]
-        const len = Math.sqrt(normal[0] ** 2 + normal[1] ** 2 + normal[2] ** 2)
-        normal[0] /= len
-        normal[1] /= len
-        normal[2] /= len
-        
-        pts.forEach(pt => {
-          vertices.push(...pt)
-          normals.push(...normal)
-        })
+    try {
+      if (!window.opencascade) {
+        setError("opencascade is not loaded yet");
+        return;
       }
+
+      // Get BRep_Tool namespace/object and TopoDS.Face constructor
+      const BRep_Tool = getOcctCtor("BRep_Tool");
+      const TopoDS_Face = getOcctCtor("TopoDS_Face");
+      const TopExp_Explorer = getOcctCtor("TopExp_Explorer");
+      const TopLoc_Location = getOcctCtor("TopLoc_Location");
+
+      if (!BRep_Tool) {
+        setError("Missing occt export: BRep_Tool (tried variants). Can't triangulate.");
+        return;
+      }
+
+      if (!TopoDS_Face && typeof TopoDS_Face !== "function") {
+        // Some builds export TopoDS.Face_1 as TopoDS_Face_1 or TopoDS.Face
+        // We'll be defensive but continue; TopoDS.Face is used for type-checking, skip if absent.
+        console.warn("TopoDS.Face constructor not found; proceeding with best-effort triangulation");
+      }
+
+      // Explore faces
+      const explorerCtor = getOcctCtor("TopExp_Explorer");
+      const FaceClass = getOcctCtor("TopoDS_Face") || getOcctCtor("TopoDS.Face_1") || getOcctCtor("TopoDS_Face_1");
+      const explorer = explorerCtor ? new explorerCtor(shape, /* kind=*/ 4 /* TopAbs_FACE */) : null;
+
+      const vertices = [];
+      const normals = [];
+      const indices = [];
+
+      // If TopExp_Explorer not available, try alternative approach: traverse with TopoDS compound handling
+      if (!explorer) {
+        console.warn("TopExp_Explorer not available - attempting to treat whole shape as single face for triangulation");
+      }
+
+      // Iterate faces (if explorer available)
+      if (explorer) {
+        const TopAbs_FACE = 4;
+        for (; !explorer.More().isNull && explorer.More(); explorer.Next()) {
+          const face = explorer.Current();
+          // For each face, get triangulation
+          const loc = new TopLoc_Location(0);
+          let tri = null;
+          try {
+            tri = BRep_Tool.Triangulation(face, loc);
+          } catch (e) {
+            console.warn("BRep_Tool.Triangulation call failed for a face:", e);
+            tri = null;
+          }
+          if (!tri) continue;
+
+          const nnodes = tri.NbNodes();
+          const ntris = tri.NbTriangles();
+          const nodeBuffer = [];
+
+          for (let i = 1; i <= nnodes; i++) {
+            const p = tri.Node(i);
+            // x, y, z
+            nodeBuffer.push(p.x());
+            nodeBuffer.push(p.y());
+            nodeBuffer.push(p.z());
+          }
+
+          for (let t = 1; t <= ntris; t++) {
+            const triIdx = tri.Triangle(t);
+            const a = triIdx.Value(1);
+            const b = triIdx.Value(2);
+            const c = triIdx.Value(3);
+            const base = vertices.length / 3;
+            // push vertices for this simple approach
+            const ax = nodeBuffer[(a - 1) * 3];
+            const ay = nodeBuffer[(a - 1) * 3 + 1];
+            const az = nodeBuffer[(a - 1) * 3 + 2];
+            const bx = nodeBuffer[(b - 1) * 3];
+            const by = nodeBuffer[(b - 1) * 3 + 1];
+            const bz = nodeBuffer[(b - 1) * 3 + 2];
+            const cx = nodeBuffer[(c - 1) * 3];
+            const cy = nodeBuffer[(c - 1) * 3 + 1];
+            const cz = nodeBuffer[(c - 1) * 3 + 2];
+
+            vertices.push(ax, ay, az, bx, by, bz, cx, cy, cz);
+
+            // naive normals (not smoothed)
+            const v1x = bx - ax;
+            const v1y = by - ay;
+            const v1z = bz - az;
+            const v2x = cx - ax;
+            const v2y = cy - ay;
+            const v2z = cz - az;
+            const nx = v1y * v2z - v1z * v2y;
+            const ny = v1z * v2x - v1x * v2z;
+            const nz = v1x * v2y - v1y * v2x;
+            const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+            normals.push(nx / len, ny / len, nz / len, nx / len, ny / len, nz / len, nx / len, ny / len, nz / len);
+
+            const baseIndex = (base);
+            indices.push(baseIndex, baseIndex + 1, baseIndex + 2);
+          }
+        }
+      } else {
+        // No explorer - attempt triangulation of top-level shape
+        try {
+          const loc = getOcctCtor("TopLoc_Location") ? new getOcctCtor("TopLoc_Location")() : null;
+          const tri = BRep_Tool.Triangulation(shape, loc);
+          if (tri) {
+            const nnodes = tri.NbNodes();
+            const ntris = tri.NbTriangles();
+            const nodeBuffer = [];
+            for (let i = 1; i <= nnodes; i++) {
+              const p = tri.Node(i);
+              nodeBuffer.push(p.x(), p.y(), p.z());
+            }
+            for (let t = 1; t <= ntris; t++) {
+              const triIdx = tri.Triangle(t);
+              const a = triIdx.Value(1);
+              const b = triIdx.Value(2);
+              const c = triIdx.Value(3);
+              const ax = nodeBuffer[(a - 1) * 3];
+              const ay = nodeBuffer[(a - 1) * 3 + 1];
+              const az = nodeBuffer[(a - 1) * 3 + 2];
+              const bx = nodeBuffer[(b - 1) * 3];
+              const by = nodeBuffer[(b - 1) * 3 + 1];
+              const bz = nodeBuffer[(b - 1) * 3 + 2];
+              const cx = nodeBuffer[(c - 1) * 3];
+              const cy = nodeBuffer[(c - 1) * 3 + 1];
+              const cz = nodeBuffer[(c - 1) * 3 + 2];
+              vertices.push(ax, ay, az, bx, by, bz, cx, cy, cz);
+              const v1x = bx - ax;
+              const v1y = by - ay;
+              const v1z = bz - az;
+              const v2x = cx - ax;
+              const v2y = cy - ay;
+              const v2z = cz - az;
+              const nx = v1y * v2z - v1z * v2y;
+              const ny = v1z * v2x - v1x * v2z;
+              const nz = v1x * v2y - v1y * v2x;
+              const len = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+              normals.push(nx / len, ny / len, nz / len, nx / len, ny / len, nz / len, nx / len, ny / len, nz / len);
+              const baseIndex = (vertices.length / 3) - 3;
+              indices.push(baseIndex, baseIndex + 1, baseIndex + 2);
+            }
+          }
+        } catch (e) {
+          console.warn("Triangulation fallback failed:", e);
+        }
+      }
+
+      if (vertices.length === 0) {
+        setError("No triangulation available for this STEP/IGES file (missing triangulation in opencascade build).");
+        return;
+      }
+
+      // Build BufferGeometry
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+      geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+      geometry.setIndex(indices);
+
+      addThreeMesh(geometry);
+    } catch (e) {
+      console.error("Error during tessellation:", e);
+      setError("Error during tessellation: " + (e && e.message ? e.message : String(e)));
     }
-    
-    const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3))
-    geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(normals), 3))
-    
-    return geo
   }
 
-  // Finish mesh setup
-  function finishMesh(geo) {
-    const THREE = window.THREE
-    
-    geo.computeBoundingBox()
-    const center = new THREE.Vector3()
-    geo.boundingBox.getCenter(center)
-    geo.translate(-center.x, -center.y, -center.z)
+  // Load STEP file using opencascade
+  async function loadSTEP(arrayBuffer) {
+    setError(null);
+    setLoading(true);
+    try {
+      if (!window.opencascade) {
+        setError("opencascade is not loaded yet. Please wait and try again.");
+        setLoading(false);
+        return;
+      }
 
-    const size = new THREE.Vector3()
-    geo.boundingBox.getSize(size)
-    const maxDim = Math.max(size.x, size.y, size.z)
-    const scale = 2 / maxDim
-    geo.scale(scale, scale, scale)
+      // Get STEPControl_Reader constructor robustly
+      const STEPControl_Reader = getOcctCtor("STEPControl_Reader");
+      if (!STEPControl_Reader) {
+        setError("Missing occt constructor: STEPControl_Reader (tried common suffixes). Can't read STEP.");
+        setLoading(false);
+        return;
+      }
 
-    // Check if transparent
-    const isTransparent = project.transparent || false
-    const opacity = project.opacity || (isTransparent ? 0.7 : 1.0)
+      const oc = window.opencascade;
+      const reader = new STEPControl_Reader();
+      // Create a stream from arrayBuffer
+      const uint8 = new Uint8Array(arrayBuffer);
+      if (oc.MakeStream) {
+        const str = oc.MakeStream(uint8);
+        const status = reader.ReadStream(str);
+        if (status !== 0 && status !== oc.IFSelect_RetDone) {
+          setError("STEP reading failed with status: " + status);
+          setLoading(false);
+          return;
+        }
+      } else if (reader.ReadFile) {
+        // Some builds expose ReadFile and we need to provide a filename, so fallback is limited
+        setError("opencascade build does not support stream-based STEP reading in this environment.");
+        setLoading(false);
+        return;
+      } else {
+        setError("No supported STEP reading API found on opencascade build.");
+        setLoading(false);
+        return;
+      }
 
-    const mat = new THREE.MeshPhongMaterial({
-      color: new THREE.Color(project.color),
-      specular: 0x111111,
-      shininess: 200,
-      transparent: isTransparent,
-      opacity: opacity,
-      side: THREE.DoubleSide,
-      flatShading: false
-    })
-    
-    const mesh = new THREE.Mesh(geo, mat)
-    sceneRef.current.add(mesh)
-    meshRef.current = mesh
-    setIsLoading(false)
-    setLoadingProgress(100)
-  }
+      // Transfer root
+      const nbr = reader.TransferRoots();
+      if (nbr <= 0) {
+        setError("No roots transferred from STEP file.");
+        setLoading(false);
+        return;
+      }
+      const shape = reader.OneShape();
+      tessellateShape(shape);
 
-  const updateCamera = () => {
-    const { spherical, target, panOffset } = ctrlRef.current
-    const pos = new window.THREE.Vector3().setFromSpherical(spherical)
-    cameraRef.current.position.copy(target).add(pos).add(panOffset)
-    cameraRef.current.lookAt(target.clone().add(panOffset))
-  }
-
-  const handleMouseDown = e => {
-    e.preventDefault()
-    ctrlRef.current.isRotating = e.button === 0
-    ctrlRef.current.isPanning = e.button === 2
-    ctrlRef.current.lastX = e.clientX
-    ctrlRef.current.lastY = e.clientY
-  }
-
-  const handleMouseMove = e => {
-    const c = ctrlRef.current
-    if (!c.isRotating && !c.isPanning) return
-    const dx = e.clientX - c.lastX
-    const dy = e.clientY - c.lastY
-    if (c.isRotating) {
-      c.spherical.theta -= dx * 0.01
-      c.spherical.phi += dy * 0.01
-      c.spherical.phi = window.THREE.MathUtils.clamp(c.spherical.phi, 0.1, Math.PI - 0.1)
+    } catch (e) {
+      console.error(e);
+      setError("Failed to load STEP: " + (e && e.message ? e.message : String(e)));
+    } finally {
+      setLoading(false);
     }
-    if (c.isPanning) {
-      const pan = new window.THREE.Vector3()
-      pan.copy(cameraRef.current.position).sub(c.target).normalize()
-      pan.cross(cameraRef.current.up).setLength(dx * 0.005)
-      pan.addScaledVector(cameraRef.current.up, dy * 0.005)
-      c.panOffset.add(pan)
+  }
+
+  // Load IGES
+  async function loadIGES(arrayBuffer) {
+    setError(null);
+    setLoading(true);
+    try {
+      if (!window.opencascade) {
+        setError("opencascade is not loaded yet. Please wait and try again.");
+        setLoading(false);
+        return;
+      }
+
+      const IGESControl_Reader = getOcctCtor("IGESControl_Reader");
+      if (!IGESControl_Reader) {
+        setError("Missing occt constructor: IGESControl_Reader (tried common suffixes). Can't read IGES.");
+        setLoading(false);
+        return;
+      }
+
+      const oc = window.opencascade;
+      const reader = new IGESControl_Reader();
+      const uint8 = new Uint8Array(arrayBuffer);
+      if (oc.MakeStream) {
+        const str = oc.MakeStream(uint8);
+        const status = reader.ReadStream(str);
+        if (status !== 0 && status !== oc.IFSelect_RetDone) {
+          setError("IGES reading failed with status: " + status);
+          setLoading(false);
+          return;
+        }
+      } else {
+        setError("opencascade build does not support stream-based IGES reading in this environment.");
+        setLoading(false);
+        return;
+      }
+
+      const nbr = reader.TransferRoots();
+      if (nbr <= 0) {
+        setError("No roots transferred from IGES file.");
+        setLoading(false);
+        return;
+      }
+      const shape = reader.OneShape();
+      tessellateShape(shape);
+    } catch (e) {
+      console.error(e);
+      setError("Failed to load IGES: " + (e && e.message ? e.message : String(e)));
+    } finally {
+      setLoading(false);
     }
-    c.lastX = e.clientX
-    c.lastY = e.clientY
   }
 
-  const handleMouseUp = () => {
-    ctrlRef.current.isRotating = ctrlRef.current.isPanning = false
-  }
-
-  const handleWheel = e => {
-    e.preventDefault()
-    ctrlRef.current.spherical.radius = Math.max(1, Math.min(20,
-      ctrlRef.current.spherical.radius + e.deltaY * 0.01))
-  }
-
-  const handleContextMenu = e => e.preventDefault()
-
-  const handleTouchStart = e => {
-    ctrlRef.current.touches = Array.from(e.touches)
-  }
-
-  const handleTouchMove = e => {
-    e.preventDefault()
-    const c = ctrlRef.current
-    const touches = Array.from(e.touches)
-    const prev = c.touches
-    if (touches.length === 1 && prev.length === 1) {
-      const dx = touches[0].clientX - prev[0].clientX
-      const dy = touches[0].clientY - prev[0].clientY
-      c.spherical.theta -= dx * 0.01
-      c.spherical.phi = window.THREE.MathUtils.clamp(c.spherical.phi + dy * 0.01, 0.1, Math.PI - 0.1)
-    } else if (touches.length === 2 && prev.length === 2) {
-      const cur = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY)
-      const p = Math.hypot(prev[0].clientX - prev[1].clientX, prev[0].clientY - prev[1].clientY)
-      c.spherical.radius = Math.max(1, Math.min(20, c.spherical.radius - (cur - p) * 0.01))
-
-      const cx = (touches[0].clientX + touches[1].clientX) / 2
-      const cy = (touches[0].clientY + touches[1].clientY) / 2
-      const pcx = (prev[0].clientX + prev[1].clientX) / 2
-      const pcy = (prev[0].clientY + prev[1].clientY) / 2
-      const pan = new window.THREE.Vector3()
-      pan.copy(cameraRef.current.position).sub(c.target).normalize()
-      pan.cross(cameraRef.current.up).setLength((cx - pcx) * 0.005)
-      pan.addScaledVector(cameraRef.current.up, (cy - pcy) * 0.005)
-      c.panOffset.add(pan)
-    }
-    c.touches = touches
-  }
-
-  const handleTouchEnd = () => {
-    ctrlRef.current.touches = []
-  }
-
-  const resetView = () => {
-    ctrlRef.current.spherical.set(5, Math.PI / 3, Math.PI / 4)
-    ctrlRef.current.target.set(0, 0, 0)
-    ctrlRef.current.panOffset.set(0, 0, 0)
-    ctrlRef.current.viewState = { x: 0, y: 0, z: 0 }
-  }
-
-  const fitToScreen = () => {
-    if (!meshRef.current) return
-    const box = new window.THREE.Box3().setFromObject(meshRef.current)
-    const center = box.getCenter(new window.THREE.Vector3())
-    const size = box.getSize(new window.THREE.Vector3())
-    const maxDim = Math.max(size.x, size.y, size.z)
-    const fov = cameraRef.current.fov * Math.PI / 180
-    const dist = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.3
-    ctrlRef.current.target.copy(center)
-    ctrlRef.current.spherical.radius = dist
-    ctrlRef.current.panOffset.set(0, 0, 0)
-  }
-
-  const setViewX = () => {
-    const s = ctrlRef.current.viewState.x
-    ctrlRef.current.spherical.theta = s ? -Math.PI / 2 : Math.PI / 2
-    ctrlRef.current.spherical.phi = Math.PI / 2
-    ctrlRef.current.viewState.x = 1 - s
-  }
-
-  const setViewY = () => {
-    const s = ctrlRef.current.viewState.y
-    ctrlRef.current.spherical.theta = 0
-    ctrlRef.current.spherical.phi = s ? Math.PI / 2 : -Math.PI / 2
-    ctrlRef.current.viewState.y = 1 - s
-  }
-
-  const setViewZ = () => {
-    const s = ctrlRef.current.viewState.z
-    ctrlRef.current.spherical.theta = s ? Math.PI : 0
-    ctrlRef.current.spherical.phi = Math.PI / 2
-    ctrlRef.current.viewState.z = 1 - s
-  }
-
-  const handleDownload = () => {
-    const a = document.createElement('a')
-    a.href = project.stepFile
-    a.download = project.title || 'model'
-    a.click()
-  }
-
-  if (!project) return null
+  // Handler when file prop changes
+  useEffect(() => {
+    if (!file || !file.name) return;
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const ab = ev.target.result;
+      if (file.name.toLowerCase().endsWith(".step") || file.name.toLowerCase().endsWith(".stp")) {
+        loadSTEP(ab);
+      } else if (file.name.toLowerCase().endsWith(".iges") || file.name.toLowerCase().endsWith(".igs")) {
+        loadIGES(ab);
+      } else {
+        setError("Unsupported file type: " + file.name);
+      }
+    };
+    reader.onerror = (e) => {
+      setError("Failed to read input file: " + e);
+    };
+    reader.readAsArrayBuffer(file);
+  }, [file]);
 
   return (
-    <>
-      {showPopup && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 200, display: 'flex',
-            alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(0,0,0,.85)', backdropFilter: 'blur(8px)',
-            animation: 'fadeIn .3s ease'
-          }}
-          onClick={() => { setShowPopup(false); onClose() }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              maxWidth: '500px', width: '90%',
-              background: 'linear-gradient(135deg,rgba(15,20,32,.98),rgba(10,14,26,.98))',
-              borderRadius: '20px', border: '2px solid rgba(255,100,100,.5)',
-              boxShadow: '0 20px 60px rgba(0,0,0,.8)', padding: '2rem',
-              animation: 'slideUp .4s cubic-bezier(.4,0,.2,1)', textAlign: 'center'
-            }}
-          >
-            <div style={{
-              width: '80px', height: '80px', margin: '0 auto 1.5rem',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg,rgba(255,100,100,.2),rgba(255,100,100,.05))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <svg width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='rgba(255,100,100,.9)' strokeWidth='2'>
-                <circle cx='12' cy='12' r='10' />
-                <line x1='12' y1='8' x2='12' y2='12' />
-                <line x1='12' y1='16' x2='12.01' y2='16' />
-              </svg>
-            </div>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: '#fff' }}>
-              {error || 'Model Unavailable'}
-            </h2>
-            <p style={{ fontSize: '1rem', lineHeight: '1.6', color: 'rgba(255,255,255,.8)', marginBottom: '1.5rem' }}>
-              {error === 'CAD parser initialization failed' 
-                ? 'The CAD file parser could not be initialized. This may be due to browser compatibility issues.'
-                : 'Unable to load the STEP/IGES model. Please check the file format and try again.'}
-            </p>
-            <button
-              onClick={() => { setShowPopup(false); onClose() }}
-              style={{
-                padding: '.875rem 2rem',
-                background: 'linear-gradient(135deg,rgba(255,100,100,.8),rgba(255,100,100,.6))',
-                color: '#fff', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600',
-                cursor: 'pointer', transition: 'all .2s ease', width: '100%'
-              }}
-            >
-              Got it
-            </button>
-          </div>
-        </div>
-      )}
-
-      {!showPopup && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 100, display: 'flex',
-            alignItems: 'center', justifyContent: 'center', animation: 'fadeIn .3s ease'
-          }}
-          onClick={onClose}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        >
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.95)', backdropFilter: 'blur(8px)' }} />
-
-          {/* Control bar */}
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              position: 'absolute', top: '2rem', left: '50%', transform: 'translateX(-50%)',
-              display: 'flex', gap: '.5rem', background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(12px)',
-              padding: '.75rem 1rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,.1)',
-              zIndex: 10, animation: 'slideDown .4s ease'
-            }}
-          >
-            <div style={{
-              padding: '0 1rem', display: 'flex', alignItems: 'center', fontSize: '.9rem',
-              fontWeight: '600', color: '#fff', borderRight: '1px solid rgba(255,255,255,.2)',
-              maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-            }}>
-              {project.title || 'STEP Model'}
-            </div>
-
-            <button onClick={setViewX} title='View X axis' style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(255,100,100,.2)', border: '1px solid rgba(255,100,100,.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '.85rem', fontWeight: '700', color: '#ff6464', cursor: 'pointer'
-            }}>X</button>
-
-            <button onClick={setViewY} title='View Y axis' style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(100,255,100,.2)', border: '1px solid rgba(100,255,100,.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '.85rem', fontWeight: '700', color: '#64ff64', cursor: 'pointer'
-            }}>Y</button>
-
-            <button onClick={setViewZ} title='View Z axis' style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(100,100,255,.2)', border: '1px solid rgba(100,255,255,.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '.85rem', fontWeight: '700', color: '#6464ff', cursor: 'pointer'
-            }}>Z</button>
-
-            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,.2)', margin: '0 .25rem' }} />
-
-            <button onClick={resetView} title='Reset View' style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-            }}>
-              <svg width='20' height='20' viewBox='0 0 24 24' fill='none'>
-                <path d='M3 12a9 9 0 109 9 9 9 0 00-9-9z' stroke='white' strokeWidth='2' />
-                <path d='M12 7v5l3 3' stroke='white' strokeWidth='2' strokeLinecap='round' />
-              </svg>
-            </button>
-
-            <button onClick={fitToScreen} title='Fit to Screen' style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-            }}>
-              <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' strokeWidth='2'>
-                <rect x='3' y='3' width='18' height='18' rx='2' />
-                <path d='M9 9l6 6m0-6l-6 6' />
-              </svg>
-            </button>
-
-            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,.2)', margin: '0 .25rem' }} />
-
-            <button onClick={handleDownload} title='Download' style={{
-              width: '40px', height: '40px', borderRadius: '10px',
-              background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-            }}>
-              <svg width='20' height='20' viewBox='0 0 24 24' fill='none'>
-                <path d='M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3' stroke='white' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' />
-              </svg>
-            </button>
-          </div>
-
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            title='Close (Esc)'
-            style={{
-              position: 'absolute', top: '2rem', right: '2rem',
-              width: '48px', height: '48px', borderRadius: '50%',
-              background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255,255,255,.1)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', zIndex: 10,
-              animation: 'slideDown .4s ease', cursor: 'pointer'
-            }}
-          >
-            <svg width='24' height='24' viewBox='0 0 24 24' fill='none'>
-              <path d='M18 6L6 18M6 6l12 12' stroke='white' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' />
-            </svg>
+    <div style={{ display: isOpen ? "block" : "none", position: "relative", width: "100%", height: "100%" }}>
+      <div style={{ position: "absolute", right: 12, top: 12, zIndex: 1000 }}>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setTransparentMode((s) => !s)} title="Toggle transparent outline view">
+            {transparentMode ? "Solid view" : "Transparent outline"}
           </button>
+          <button onClick={() => { clearScene(); setError(null); }} title="Clear view">Clear</button>
+          <button onClick={onClose}>Close</button>
+        </div>
+      </div>
 
-          {/* Canvas container */}
-          <div
-            ref={containerRef}
-            onClick={e => e.stopPropagation()}
-            onWheel={handleWheel}
-            onMouseDown={handleMouseDown}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onContextMenu={handleContextMenu}
-            style={{
-              position: 'relative', width: '90%', height: '90%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              overflow: 'hidden',
-              cursor: ctrlRef.current.isRotating || ctrlRef.current.isPanning ? 'grabbing' : 'grab',
-              userSelect: 'none'
-            }}
-          >
-            {isLoading && !error && (
-              <div style={{
-                position: 'absolute', inset: 0, display: 'flex',
-                flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.2rem', color: '#fff', gap: '1rem'
-              }}>
-                <div>Loading STEP model...</div>
-                {loadingProgress > 0 && (
-                  <div style={{
-                    width: '200px', height: '4px', background: 'rgba(255,255,255,.1)',
-                    borderRadius: '2px', overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: `${loadingProgress}%`, height: '100%',
-                      background: 'linear-gradient(90deg, hsl(30, 100%, 60%), hsl(30, 100%, 70%))',
-                      transition: 'width 0.3s ease'
-                    }} />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+      <div ref={mountRef} style={{ width: "100%", height: "100%" }} />
 
-          {/* Help text */}
-          <div
-            style={{
-              position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
-              background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(12px)', padding: '.75rem 1.5rem',
-              borderRadius: '12px', border: '1px solid rgba(255,255,255,.1)', fontSize: '.85rem',
-              color: 'rgba(255,255,255,.7)', display: 'flex', gap: '2rem',
-              animation: 'slideUp .4s ease', zIndex: 10
-            }}
-          >
-            <span><kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>Drag</kbd> to rotate</span>
-            <span><kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>Scroll</kbd> to zoom</span>
-            <span><kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>Right-click</kbd> to pan</span>
-          </div>
+      {loading && <div style={{ position: "absolute", left: 12, top: 12 }}>Loading...</div>}
+      {error && (
+        <div style={{ position: "absolute", left: 12, bottom: 12, background: "rgba(255,0,0,0.8)", color: "white", padding: 8 }}>
+          {error}
         </div>
       )}
-
-      <style jsx>{`\n        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }\n        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }\n        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }\n        button:hover { opacity: 0.8; transform: scale(1.05); transition: all 0.2s ease; }\n        button:active { transform: scale(0.95); }\n      `}</style>
-    </>
-  )
+    </div>
+  );
 }
