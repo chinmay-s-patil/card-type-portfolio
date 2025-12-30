@@ -1,5 +1,5 @@
-'use client'
-import { useEffect, useRef, useState } from 'react'
+"use client"
+import { useEffect, useRef, useState } from "react"
 
 export default function STEPViewerModal({ project, onClose }) {
   const containerRef = useRef(null)
@@ -205,7 +205,7 @@ export default function STEPViewerModal({ project, onClose }) {
       occt.FS.writeFile(filename, fileBuffer)
       
       // Read STEP file - correct constructor name
-      const reader = new occt.STEPControl_Reader()
+      const reader = new occt.STEPControl_Reader_1()
       const status = reader.ReadFile(filename)
       
       if (status !== occt.IFSelect_RetDone) {
@@ -529,10 +529,10 @@ export default function STEPViewerModal({ project, onClose }) {
               background: 'linear-gradient(135deg,rgba(255,100,100,.2),rgba(255,100,100,.05))',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,100,100,.9)" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
+              <svg width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='rgba(255,100,100,.9)' strokeWidth='2'>
+                <circle cx='12' cy='12' r='10' />
+                <line x1='12' y1='8' x2='12' y2='12' />
+                <line x1='12' y1='16' x2='12.01' y2='16' />
               </svg>
             </div>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: '#fff' }}>
@@ -589,21 +589,21 @@ export default function STEPViewerModal({ project, onClose }) {
               {project.title || 'STEP Model'}
             </div>
 
-            <button onClick={setViewX} title="View X axis" style={{
+            <button onClick={setViewX} title='View X axis' style={{
               width: '40px', height: '40px', borderRadius: '10px',
               background: 'rgba(255,100,100,.2)', border: '1px solid rgba(255,100,100,.4)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '.85rem', fontWeight: '700', color: '#ff6464', cursor: 'pointer'
             }}>X</button>
 
-            <button onClick={setViewY} title="View Y axis" style={{
+            <button onClick={setViewY} title='View Y axis' style={{
               width: '40px', height: '40px', borderRadius: '10px',
               background: 'rgba(100,255,100,.2)', border: '1px solid rgba(100,255,100,.4)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '.85rem', fontWeight: '700', color: '#64ff64', cursor: 'pointer'
             }}>Y</button>
 
-            <button onClick={setViewZ} title="View Z axis" style={{
+            <button onClick={setViewZ} title='View Z axis' style={{
               width: '40px', height: '40px', borderRadius: '10px',
               background: 'rgba(100,100,255,.2)', border: '1px solid rgba(100,255,255,.4)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -612,37 +612,37 @@ export default function STEPViewerModal({ project, onClose }) {
 
             <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,.2)', margin: '0 .25rem' }} />
 
-            <button onClick={resetView} title="Reset View" style={{
+            <button onClick={resetView} title='Reset View' style={{
               width: '40px', height: '40px', borderRadius: '10px',
               background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
             }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M3 12a9 9 0 109 9 9 9 0 00-9-9z" stroke="white" strokeWidth="2" />
-                <path d="M12 7v5l3 3" stroke="white" strokeWidth="2" strokeLinecap="round" />
+              <svg width='20' height='20' viewBox='0 0 24 24' fill='none'>
+                <path d='M3 12a9 9 0 109 9 9 9 0 00-9-9z' stroke='white' strokeWidth='2' />
+                <path d='M12 7v5l3 3' stroke='white' strokeWidth='2' strokeLinecap='round' />
               </svg>
             </button>
 
-            <button onClick={fitToScreen} title="Fit to Screen" style={{
+            <button onClick={fitToScreen} title='Fit to Screen' style={{
               width: '40px', height: '40px', borderRadius: '10px',
               background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
             }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M9 9l6 6m0-6l-6 6" />
+              <svg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='white' strokeWidth='2'>
+                <rect x='3' y='3' width='18' height='18' rx='2' />
+                <path d='M9 9l6 6m0-6l-6 6' />
               </svg>
             </button>
 
             <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,.2)', margin: '0 .25rem' }} />
 
-            <button onClick={handleDownload} title="Download" style={{
+            <button onClick={handleDownload} title='Download' style={{
               width: '40px', height: '40px', borderRadius: '10px',
               background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
             }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <svg width='20' height='20' viewBox='0 0 24 24' fill='none'>
+                <path d='M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3' stroke='white' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' />
               </svg>
             </button>
           </div>
@@ -650,7 +650,7 @@ export default function STEPViewerModal({ project, onClose }) {
           {/* Close button */}
           <button
             onClick={onClose}
-            title="Close (Esc)"
+            title='Close (Esc)'
             style={{
               position: 'absolute', top: '2rem', right: '2rem',
               width: '48px', height: '48px', borderRadius: '50%',
@@ -660,8 +660,8 @@ export default function STEPViewerModal({ project, onClose }) {
               animation: 'slideDown .4s ease', cursor: 'pointer'
             }}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width='24' height='24' viewBox='0 0 24 24' fill='none'>
+              <path d='M18 6L6 18M6 6l12 12' stroke='white' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' />
             </svg>
           </button>
 
@@ -723,13 +723,7 @@ export default function STEPViewerModal({ project, onClose }) {
         </div>
       )}
 
-      <style jsx>{`
-        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }
-        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }
-        button:hover { opacity: 0.8; transform: scale(1.05); transition: all 0.2s ease; }
-        button:active { transform: scale(0.95); }
-      `}</style>
+      <style jsx>{`\n        @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }\n        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }\n        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }\n        button:hover { opacity: 0.8; transform: scale(1.05); transition: all 0.2s ease; }\n        button:active { transform: scale(0.95); }\n      `}</style>
     </>
   )
 }
