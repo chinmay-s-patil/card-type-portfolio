@@ -74,56 +74,52 @@ export default function STEPViewerModal({ project, onClose }) {
     }
 
     setLoadingProgress(25)
-    setLoadingMessage('Loading CAD parser (this may take a moment)...')
+    setLoadingMessage('Loading CAD parser...')
     
     try {
       setLoadingProgress(40)
       setLoadingMessage('Initializing CAD parser...')
       
-      // Load the script dynamically from public folder
+      // Load the script from your public folder
       const script = document.createElement('script')
       script.src = '/opencascade/opencascade.js'
       script.type = 'text/javascript'
       
       await new Promise((resolve, reject) => {
         script.onload = resolve
-        script.onerror = () => reject(new Error('Failed to load OpenCascade script'))
+        script.onerror = () => reject(new Error('Failed to load OpenCascade script from /opencascade/opencascade.js'))
         document.head.appendChild(script)
       })
       
-      console.log('OpenCascade script loaded')
-      console.log('Window object keys:', Object.keys(window).filter(k => k.toLowerCase().includes('open')))
+      console.log('Script loaded. Checking window object...')
+      console.log('All window keys with "open":', Object.keys(window).filter(k => k.toLowerCase().includes('open')))
       
-      // Wait a bit for the module to initialize
-      await new Promise(resolve => setTimeout(resolve, 100))
+      // Wait for initialization
+      await new Promise(resolve => setTimeout(resolve, 500))
       
-      // Check for the opencascade function under various possible names
-      let initOpenCascade = null
+      // Try to find the initialization function - log everything
+      console.log('window.opencascade type:', typeof window.opencascade)
+      console.log('window.OpenCascade type:', typeof window.OpenCascade) 
+      console.log('window.initOpenCascade type:', typeof window.initOpenCascade)
+      console.log('window.Module type:', typeof window.Module)
       
-      if (typeof window.opencascade === 'function') {
-        initOpenCascade = window.opencascade
-      } else if (typeof window.OpenCascade === 'function') {
-        initOpenCascade = window.OpenCascade
-      } else if (typeof window.initOpenCascade === 'function') {
-        initOpenCascade = window.initOpenCascade
-      } else if (window.Module && typeof window.Module === 'function') {
-        initOpenCascade = window.Module
-      }
+      // The function should be available as window.opencascade or similar
+      let initFn = window.opencascade || window.OpenCascade || window.initOpenCascade
       
-      console.log('Found OpenCascade initializer:', initOpenCascade)
-      
-      if (!initOpenCascade) {
-        console.error('Available window properties:', Object.keys(window).slice(0, 50))
-        throw new Error('OpenCascade function not found. Available: ' + Object.keys(window).filter(k => k.toLowerCase().includes('open')).join(', '))
+      if (!initFn || typeof initFn !== 'function') {
+        // Log more details for debugging
+        const allKeys = Object.keys(window).slice(-20) // Last 20 keys added
+        console.error('Could not find OpenCascade init function. Recent window keys:', allKeys)
+        throw new Error('OpenCascade initialization function not found. Check if opencascade.js loaded correctly.')
       }
       
       setLoadingProgress(50)
       setLoadingMessage('Loading WASM modules...')
       
-      // Initialize with local WASM files
-      const OCC = await initOpenCascade({
+      // Initialize with your local WASM files
+      const OCC = await initFn({
         locateFile: (path) => {
-          console.log('Loading WASM file:', path)
+          console.log('Requesting WASM file:', path)
           return `/opencascade/${path}`
         }
       })
@@ -134,8 +130,8 @@ export default function STEPViewerModal({ project, onClose }) {
       setLoadingMessage('CAD parser ready')
       setOcctReady(true)
     } catch (err) {
-      console.error('OpenCascade init error:', err)
-      setError(`Failed to initialize CAD parser: ${err.message}. Check browser console for details.`)
+      console.error('Full error details:', err)
+      setError(`Failed to initialize CAD parser: ${err.message}`)
       setShowPopup(true)
       setIsLoading(false)
     }
