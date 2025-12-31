@@ -123,7 +123,7 @@ const CADGLTFList = [
     category: 'Transportation',
     year: '2024',
     description: 'Complete truck model for aerodynamic analysis and platooning simulations. Includes cab, trailer, and detailed underbody geometry for drag reduction studies.',
-    coverPhoto: '/CAD/TruckModel/truck-preview.jpg',
+    coverPhoto: '/CAD/TruckModel/Truck.jpeg',
     gltfFile: '/CAD/TruckModel/Truck.gltf',
     color: '#ef233c',
     modelColor: '#e5f137ff',
