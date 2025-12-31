@@ -67,7 +67,7 @@ export default function STEPViewerModal({ project, onClose }) {
   }, [project])
 
   // In app/components/STEPViewerModal.jsx
-// Replace the loadOpenCascade function with this:
+  // Replace the loadOpenCascade function with this:
 
 const loadOpenCascade = async () => {
   if (window.occt) {
@@ -83,16 +83,38 @@ const loadOpenCascade = async () => {
     setLoadingProgress(40)
     setLoadingMessage('Initializing CAD parser...')
     
-    // Use dynamic import for ES modules
-    const opencascadeModule = await import('/opencascade/opencascade.js')
+    // Load as ES module script
+    const script = document.createElement('script')
+    script.type = 'module'  // Critical: load as ES module
+    script.textContent = `
+      import opencascade from '/opencascade/opencascade.js';
+      window.opencascadeInit = opencascade;
+      window.dispatchEvent(new Event('opencascade-loaded'));
+    `
     
-    console.log('Module loaded:', opencascadeModule)
+    // Wait for the module to load
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('OpenCascade module load timeout'))
+      }, 15000)
+      
+      window.addEventListener('opencascade-loaded', () => {
+        clearTimeout(timeout)
+        resolve()
+      }, { once: true })
+      
+      document.head.appendChild(script)
+    })
+    
+    if (!window.opencascadeInit || typeof window.opencascadeInit !== 'function') {
+      throw new Error('OpenCascade module loaded but initialization function not found')
+    }
     
     setLoadingProgress(50)
     setLoadingMessage('Loading WASM modules...')
     
     // Initialize with your local WASM files
-    const OCC = await opencascadeModule.default({
+    const OCC = await window.opencascadeInit({
       locateFile: (path) => {
         console.log('Requesting WASM file:', path)
         return `/opencascade/${path}`
@@ -104,6 +126,10 @@ const loadOpenCascade = async () => {
     setLoadingProgress(60)
     setLoadingMessage('CAD parser ready')
     setOcctReady(true)
+    
+    // Cleanup
+    delete window.opencascadeInit
+    
   } catch (err) {
     console.error('Full error details:', err)
     setError(`Failed to initialize CAD parser: ${err.message}`)
