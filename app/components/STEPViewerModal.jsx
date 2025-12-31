@@ -224,23 +224,83 @@ const loadOpenCascade = async () => {
       const occt = window.occt
       const fileBuffer = new Uint8Array(buffer)
       
-      occt.FS.createDataFile('/', 'model.step', fileBuffer, true, true, true)
+      // Debug: Log what's actually available
+      console.log('OpenCascade object keys:', Object.keys(occt).filter(k => k.includes('STEP')))
+      console.log('All Control classes:', Object.keys(occt).filter(k => k.includes('Control')))
       
-      const reader = new occt.STEPControl_Reader_1()
-      reader.ReadFile('model.step')
-      reader.TransferRoots()
-      const shape = reader.OneShape()
-      
-      setLoadingProgress(85)
-      setLoadingMessage('Creating 3D mesh...')
-      
-      const mesh = tessellateShape(shape)
-      finishMesh(mesh)
-      
-      occt.FS.unlink('/model.step')
+      // Ensure the directory exists and handle file creation properly
+      try {
+        // Try to create directory if it doesn't exist
+        try {
+          occt.FS.mkdir('/working')
+        } catch (e) {
+          // Directory might already exist, that's okay
+        }
+        
+        // Write file to virtual filesystem
+        const filePath = '/working/model.step'
+        occt.FS.writeFile(filePath, fileBuffer)
+        console.log('File written to virtual FS:', filePath)
+        
+        // Try all possible ways to create a STEP reader
+        let reader
+        const readerAttempts = [
+          () => new occt.STEPControl_Reader_1(),
+          () => new occt.STEPControl_Reader(),
+          () => occt.STEPControl_Reader_1 && occt.STEPControl_Reader_1(),
+          () => occt.STEPControl_Reader && occt.STEPControl_Reader(),
+          () => new occt.Handle_STEPControl_Reader(),
+          () => occt.Handle_STEPControl_Reader && occt.Handle_STEPControl_Reader()
+        ]
+        
+        for (const attempt of readerAttempts) {
+          try {
+            reader = attempt()
+            if (reader) {
+              console.log('Successfully created reader with:', attempt.toString())
+              break
+            }
+          } catch (e) {
+            // Continue to next attempt
+          }
+        }
+        
+        if (!reader) {
+          throw new Error('Could not create STEP reader with any known method. Available STEP-related methods: ' + 
+            Object.keys(occt).filter(k => k.includes('STEP')).join(', '))
+        }
+        
+        const status = reader.ReadFile(filePath)
+        console.log('STEP read status:', status)
+        
+        if (status !== 1) { // IFSelect_RetDone = 1
+          throw new Error(`Failed to read STEP file, status: ${status}`)
+        }
+        
+        const transferStatus = reader.TransferRoots()
+        console.log('Transfer status:', transferStatus)
+        
+        const shape = reader.OneShape()
+        
+        setLoadingProgress(85)
+        setLoadingMessage('Creating 3D mesh...')
+        
+        const mesh = tessellateShape(shape)
+        finishMesh(mesh)
+        
+        // Cleanup
+        try {
+          occt.FS.unlink(filePath)
+        } catch (e) {
+          console.log('Cleanup error (non-critical):', e)
+        }
+      } catch (fsError) {
+        console.error('Filesystem operation failed:', fsError)
+        throw new Error(`File system error: ${fsError.message || 'Unknown error'}`)
+      }
     } catch (err) {
       console.error('STEP load error:', err)
-      setError('STEP file could not be loaded')
+      setError(`STEP parsing failed: ${err.message || 'Unknown error'}`)
       setIsLoading(false)
       setShowPopup(true)
     }
