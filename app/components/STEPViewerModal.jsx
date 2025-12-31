@@ -66,76 +66,51 @@ export default function STEPViewerModal({ project, onClose }) {
     }
   }, [project])
 
-  const loadOpenCascade = async () => {
-    if (window.occt) {
-      setOcctReady(true)
-      setLoadingMessage('CAD parser ready')
-      return
-    }
+  // In app/components/STEPViewerModal.jsx
+// Replace the loadOpenCascade function with this:
 
-    setLoadingProgress(25)
-    setLoadingMessage('Loading CAD parser...')
-    
-    try {
-      setLoadingProgress(40)
-      setLoadingMessage('Initializing CAD parser...')
-      
-      // Load the script from your public folder
-      const script = document.createElement('script')
-      script.src = '/opencascade/opencascade.js'
-      script.type = 'text/javascript'
-      
-      await new Promise((resolve, reject) => {
-        script.onload = resolve
-        script.onerror = () => reject(new Error('Failed to load OpenCascade script from /opencascade/opencascade.js'))
-        document.head.appendChild(script)
-      })
-      
-      console.log('Script loaded. Checking window object...')
-      console.log('All window keys with "open":', Object.keys(window).filter(k => k.toLowerCase().includes('open')))
-      
-      // Wait for initialization
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Try to find the initialization function - log everything
-      console.log('window.opencascade type:', typeof window.opencascade)
-      console.log('window.OpenCascade type:', typeof window.OpenCascade) 
-      console.log('window.initOpenCascade type:', typeof window.initOpenCascade)
-      console.log('window.Module type:', typeof window.Module)
-      
-      // The function should be available as window.opencascade or similar
-      let initFn = window.opencascade || window.OpenCascade || window.initOpenCascade
-      
-      if (!initFn || typeof initFn !== 'function') {
-        // Log more details for debugging
-        const allKeys = Object.keys(window).slice(-20) // Last 20 keys added
-        console.error('Could not find OpenCascade init function. Recent window keys:', allKeys)
-        throw new Error('OpenCascade initialization function not found. Check if opencascade.js loaded correctly.')
-      }
-      
-      setLoadingProgress(50)
-      setLoadingMessage('Loading WASM modules...')
-      
-      // Initialize with your local WASM files
-      const OCC = await initFn({
-        locateFile: (path) => {
-          console.log('Requesting WASM file:', path)
-          return `/opencascade/${path}`
-        }
-      })
-      
-      console.log('OpenCascade initialized:', OCC)
-      window.occt = OCC
-      setLoadingProgress(60)
-      setLoadingMessage('CAD parser ready')
-      setOcctReady(true)
-    } catch (err) {
-      console.error('Full error details:', err)
-      setError(`Failed to initialize CAD parser: ${err.message}`)
-      setShowPopup(true)
-      setIsLoading(false)
-    }
+const loadOpenCascade = async () => {
+  if (window.occt) {
+    setOcctReady(true)
+    setLoadingMessage('CAD parser ready')
+    return
   }
+
+  setLoadingProgress(25)
+  setLoadingMessage('Loading CAD parser...')
+  
+  try {
+    setLoadingProgress(40)
+    setLoadingMessage('Initializing CAD parser...')
+    
+    // Use dynamic import for ES modules
+    const opencascadeModule = await import('/opencascade/opencascade.js')
+    
+    console.log('Module loaded:', opencascadeModule)
+    
+    setLoadingProgress(50)
+    setLoadingMessage('Loading WASM modules...')
+    
+    // Initialize with your local WASM files
+    const OCC = await opencascadeModule.default({
+      locateFile: (path) => {
+        console.log('Requesting WASM file:', path)
+        return `/opencascade/${path}`
+      }
+    })
+    
+    console.log('OpenCascade initialized:', OCC)
+    window.occt = OCC
+    setLoadingProgress(60)
+    setLoadingMessage('CAD parser ready')
+    setOcctReady(true)
+  } catch (err) {
+    console.error('Full error details:', err)
+    setError(`Failed to initialize CAD parser: ${err.message}`)
+    setShowPopup(true)
+    setIsLoading(false)
+  }
+}
 
   // Scene setup
   useEffect(() => {
