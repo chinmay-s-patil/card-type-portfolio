@@ -9,7 +9,7 @@ import OpenFOAMNormalized from './sections/OpenFOAMNormalized'
 import EventsNormalized from './sections/EventsNormalized'
 import Footer from './components/Footer'
 import MobileWarning from './components/MobileWarning'
-import CADNormalized from './sections/CADSTEPNormalized'
+import CADNormalized from './sections/CADglTBNormalized'
 
 
 const sectionsMeta = [
