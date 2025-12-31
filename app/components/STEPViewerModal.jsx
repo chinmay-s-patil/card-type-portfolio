@@ -69,7 +69,7 @@ export default function STEPViewerModal({ project, onClose }) {
   // In app/components/STEPViewerModal.jsx
   // Replace the loadOpenCascade function with this:
 
-const loadOpenCascade = async () => {
+  const loadOpenCascade = async () => {
   if (window.occt) {
     setOcctReady(true)
     setLoadingMessage('CAD parser ready')
@@ -85,14 +85,13 @@ const loadOpenCascade = async () => {
     
     // Load as ES module script
     const script = document.createElement('script')
-    script.type = 'module'  // Critical: load as ES module
+    script.type = 'module'
     script.textContent = `
-      import opencascade from '/opencascade/opencascade.js';
+      import opencascade from '/opencascade/index.js';
       window.opencascadeInit = opencascade;
       window.dispatchEvent(new Event('opencascade-loaded'));
     `
     
-    // Wait for the module to load
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error('OpenCascade module load timeout'))
@@ -113,7 +112,6 @@ const loadOpenCascade = async () => {
     setLoadingProgress(50)
     setLoadingMessage('Loading WASM modules...')
     
-    // Initialize with your local WASM files
     const OCC = await window.opencascadeInit({
       locateFile: (path) => {
         console.log('Requesting WASM file:', path)
@@ -121,13 +119,22 @@ const loadOpenCascade = async () => {
       }
     })
     
-    console.log('OpenCascade initialized:', OCC)
+    console.log('OpenCascade module loaded:', OCC)
+    
+    if (OCC.ready) {
+      setLoadingMessage('Waiting for WASM modules to initialize...')
+      await OCC.ready
+      console.log('OpenCascade ready promise resolved')
+    }
+    
+    console.log('Sample of available classes:', Object.keys(OCC).slice(0, 50))
+    console.log('STEP-related classes:', Object.keys(OCC).filter(k => k.includes('STEP')))
+    
     window.occt = OCC
     setLoadingProgress(60)
     setLoadingMessage('CAD parser ready')
     setOcctReady(true)
     
-    // Cleanup
     delete window.opencascadeInit
     
   } catch (err) {
