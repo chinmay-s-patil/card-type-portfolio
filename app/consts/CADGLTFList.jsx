@@ -23,6 +23,7 @@ const CADGLTFList = [
     gltfFile: '/CAD/bike/bike.gltf',
     color: '#4ecdc4',
     modelColor: '#2C2C2C',
+    modelRotation: { x: Math.PI / 2, y: 0, z: Math.PI / 2 },
     transparency: 0
   },
   {
@@ -35,6 +36,7 @@ const CADGLTFList = [
     gltfFile: '/CAD/Burner Head/BurnerAssem.gltf',
     color: '#ff7b00',
     modelColor: '#B87333',
+    modelRotation: { x: Math.PI / 2, y: 0, z: Math.PI / 2 },
     transparency: 0
   },
   {
@@ -44,9 +46,10 @@ const CADGLTFList = [
     year: '2024',
     description: 'High-efficiency propeller blade design optimized for thrust generation. Features twisted airfoil geometry with precise pitch control for drone and aviation applications.',
     coverPhoto: '/CAD/Propeller/Propeller-preview.jpg',
-    gltfFile: '/CAD/Propeller/propeller.gltf',
+    gltfFile: '/CAD/Propeller/Propeller.gltf',
     color: '#48cae4',
     modelColor: '#708090',
+    modelRotation: { x: Math.PI / 2, y: Math.PI*3 / 2, z: Math.PI / 2 },
     transparency: 0
   },
   {
@@ -59,6 +62,7 @@ const CADGLTFList = [
     gltfFile: '/CAD/S500-Frame/Base Frame.gltf',
     color: '#06ffa5',
     modelColor: '#2C2C2C',
+    // modelRotation: { x: Math.PI / 2, y: 0, z: Math.PI / 2 },
     transparency: 0
   },
   {
@@ -71,6 +75,7 @@ const CADGLTFList = [
     gltfFile: '/CAD/SolarPanelonaRoof/Unnamed6-assemFusion.gltf',
     color: '#90e0ef',
     modelColor: '#4169E1',
+    modelRotation: { x: Math.PI / 2, y: 0, z: Math.PI / 2 },
     transparency: 30
   },
   {
@@ -83,6 +88,7 @@ const CADGLTFList = [
     gltfFile: '/CAD/SVE/SVE.gltf',
     color: '#ffbe0b',
     modelColor: '#FFD700',
+    modelRotation: { x: Math.PI / 2, y: 0, z: Math.PI / 2 },
     transparency: 40
   },
   {
@@ -95,6 +101,7 @@ const CADGLTFList = [
     gltfFile: '/CAD/Tire/Tire.gltf',
     color: '#2C2C2C',
     modelColor: '#1C1C1C',
+    modelRotation: { x: Math.PI / 2, y: 0, z: Math.PI / 2 },
     transparency: 0
   },
   {
@@ -104,9 +111,10 @@ const CADGLTFList = [
     year: '2024',
     description: 'Novel toroidal propeller design for reduced noise and improved efficiency. Features continuous blade geometry in a ring configuration for next-generation drone applications.',
     coverPhoto: '/CAD/toroidalProp/ToroidalProp.png',
-    gltfFile: '/CAD/toroidalProp/Toroidal Propeller CCW.gltf',
+    gltfFile: '/CAD/toroidalProp/5040 NACA2415 Toroidal Propeller CCW.gltf',
     color: '#9d4edd',
-    modelColor: '#4169E1',
+    modelColor: '#e14184ff',
+    modelRotation: { x: Math.PI / 2, y: 0, z: Math.PI / 2 },
     transparency: 0
   },
   {
@@ -118,7 +126,8 @@ const CADGLTFList = [
     coverPhoto: '/CAD/TruckModel/truck-preview.jpg',
     gltfFile: '/CAD/TruckModel/Truck.gltf',
     color: '#ef233c',
-    modelColor: '#8B0000',
+    modelColor: '#e5f137ff',
+    modelRotation: { x: Math.PI / 2, y: 0, z: Math.PI / 2 },
     transparency: 0
   },
   {
@@ -128,9 +137,10 @@ const CADGLTFList = [
     year: '2024',
     description: 'Precision 3D model of wind tunnel test section from field measurements with 0.01mm tolerance. Includes flow conditioning elements and measurement instrumentation mounting points.',
     coverPhoto: '/Projects/CAD Modeling of Wind Tunnel Test Section/CAD Modeling of Wind Tunnel Test Section.jpg',
-    gltfFile: '/CAD/WindTunnelModelling/wind-tunnel.gltf',
+    gltfFile: '/CAD/WindTunnelModelling/Wind Tunnel.gltf',
     color: '#8338ec',
     modelColor: '#C0C0C0',
+    modelRotation: { x: Math.PI / 2, y: 0, z: Math.PI / 2 },
     transparency: 30
   },
 ]
