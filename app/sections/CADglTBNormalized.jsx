@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from 'react'
+import CADGLTFList from '../consts/CADGLTFList'
 
 // CAD Projects List with glTF files
 const CADList = [
@@ -10,7 +11,7 @@ const CADList = [
     year: '2022',
     description: 'Detailed CAD model of an acoustic guitar featuring advanced surface modeling techniques, assembly design, and precise component integration.',
     coverPhoto: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=800&h=600&fit=crop',
-    gltfFile: '/CAD/Guitar/Guitar.gltf',
+    gltfFile: 'CAD/Guitar/Guitar.gltf',
     tags: ['SolidWorks', 'Surface Modeling', 'Product Design', 'Assembly'],
     color: '#ff6b35',
     transparency: 0
