@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import STEPViewerModal from '../components/STEPViewerModal'
-import CADList from '../consts/CADSTEPList'
+import STEPViewerModal from './STEPViewerModal'
+import CADList from './CADSTEPList'
 
 export default function CADNormalized() {
   const [selectedProject, setSelectedProject] = useState(null)

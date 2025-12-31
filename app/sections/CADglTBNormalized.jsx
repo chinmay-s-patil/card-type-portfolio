@@ -2,59 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import CADGLTFList from '../consts/CADGLTFList'
 
-// CAD Projects List with glTF files
-const CADList = [
-  {
-    id: 1,
-    title: 'Guitar Design',
-    category: 'Product Design',
-    year: '2022',
-    description: 'Detailed CAD model of an acoustic guitar featuring advanced surface modeling techniques, assembly design, and precise component integration.',
-    coverPhoto: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=800&h=600&fit=crop',
-    gltfFile: 'CAD/Guitar/Guitar.gltf',
-    tags: ['SolidWorks', 'Surface Modeling', 'Product Design', 'Assembly'],
-    color: '#ff6b35',
-    transparency: 0
-  },
-  {
-    id: 2,
-    title: 'Aerofoil',
-    category: 'Aerodynamics',
-    year: '2022',
-    description: 'Precision aerodynamic profile designed for optimal lift-to-drag ratio in subsonic flow conditions.',
-    coverPhoto: 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?w=800&h=600&fit=crop',
-    gltfFile: '/CAD/Aerofoil/Aerofoil.gltf',
-    tags: ['CFD', 'Aerodynamics', 'Analysis'],
-    color: '#4ecdc4',
-    transparency: 50
-  },
-  {
-    id: 3,
-    title: 'Wind Tunnel Test Section',
-    category: 'Experimental Equipment',
-    year: '2024',
-    description: 'Precision 3D model of wind tunnel test section from field measurements with 0.01mm tolerance.',
-    coverPhoto: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800&h=600&fit=crop',
-    gltfFile: '/CAD/WindTunnel/tunnel.gltf',
-    tags: ['Precision Modeling', 'Experimental', 'Aerodynamics'],
-    color: '#8338ec',
-    transparency: 30
-  },
-  {
-    id: 4,
-    title: 'Solar Vortex Engine',
-    category: 'Energy Systems',
-    year: '2024',
-    description: 'Research-grade CAD model designed for CFD baseline and parametric optimization studies.',
-    coverPhoto: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&h=600&fit=crop',
-    gltfFile: '/CAD/SVE/sve.gltf',
-    tags: ['Energy', 'Parametric', 'CFD-Ready'],
-    color: '#ffbe0b',
-    transparency: 0
-  }
-]
-
-// glTF Viewer Modal Component
+// Import GLTFViewerModal component (will create separately)
 function GLTFViewerModal({ project, onClose }) {
   const containerRef = useRef(null)
   const sceneRef = useRef(null)
@@ -64,7 +12,9 @@ function GLTFViewerModal({ project, onClose }) {
   const animationRef = useRef(null)
   const [threeReady, setThreeReady] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadingProgress, setLoadingProgress] = useState(0)
   const [error, setError] = useState(null)
+  const [showPopup, setShowPopup] = useState(false)
   const [isTransparent, setIsTransparent] = useState(project.transparency > 0)
   const [showInfo, setShowInfo] = useState(true)
 
@@ -75,22 +25,51 @@ function GLTFViewerModal({ project, onClose }) {
     lastY: 0,
     target: null,
     spherical: null,
-    panOffset: null
+    panOffset: null,
+    viewState: { x: 0, y: 0, z: 0, perp: 0 }
   })
 
-  // Load Three.js
+  // Load Three.js and GLTFLoader
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (window.THREE) {
-      setThreeReady(true)
-      return
+    
+    const loadThreeJS = async () => {
+      // Load Three.js if not already loaded
+      if (!window.THREE) {
+        const script = document.createElement('script')
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
+        script.onload = () => loadGLTFLoader()
+        script.onerror = () => {
+          setError('Could not load 3D engine')
+          setShowPopup(true)
+        }
+        document.head.appendChild(script)
+      } else {
+        loadGLTFLoader()
+      }
     }
 
-    const script = document.createElement('script')
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
-    script.onload = () => setThreeReady(true)
-    script.onerror = () => setError('Could not load 3D engine')
-    document.head.appendChild(script)
+    const loadGLTFLoader = () => {
+      // Inject GLTFLoader
+      if (!window.THREE.GLTFLoader) {
+        const loaderScript = document.createElement('script')
+        loaderScript.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js'
+        loaderScript.onload = () => {
+          setThreeReady(true)
+          setLoadingProgress(20)
+        }
+        loaderScript.onerror = () => {
+          setError('Could not load GLTF loader')
+          setShowPopup(true)
+        }
+        document.head.appendChild(loaderScript)
+      } else {
+        setThreeReady(true)
+        setLoadingProgress(20)
+      }
+    }
+
+    loadThreeJS()
   }, [])
 
   // Scene setup
@@ -160,19 +139,62 @@ function GLTFViewerModal({ project, onClose }) {
   }, [project, threeReady])
 
   function loadGLTF(url) {
-    // Placeholder: Create a simple colored cube as demo
     const THREE = window.THREE
-    const geometry = new THREE.BoxGeometry(2, 2, 2)
-    const material = new THREE.MeshPhongMaterial({
-      color: new THREE.Color(project.color),
-      transparent: isTransparent,
-      opacity: isTransparent ? project.transparency / 100 : 1.0,
-      side: THREE.DoubleSide
-    })
-    const mesh = new THREE.Mesh(geometry, material)
-    sceneRef.current.add(mesh)
-    meshRef.current = mesh
-    setIsLoading(false)
+    setLoadingProgress(40)
+    setIsLoading(true)
+
+    // Check if GLTFLoader is available
+    if (!THREE.GLTFLoader) {
+      setError('GLTF Loader not available')
+      setShowPopup(true)
+      setIsLoading(false)
+      return
+    }
+
+    const loader = new THREE.GLTFLoader()
+    
+    loader.load(
+      url,
+      (gltf) => {
+        setLoadingProgress(80)
+        const model = gltf.scene
+        
+        // Center and scale model
+        const box = new THREE.Box3().setFromObject(model)
+        const center = box.getCenter(new THREE.Vector3())
+        const size = box.getSize(new THREE.Vector3())
+        
+        model.position.sub(center)
+        const maxDim = Math.max(size.x, size.y, size.z)
+        const scale = 2 / maxDim
+        model.scale.setScalar(scale)
+        
+        // Apply transparency if needed
+        if (isTransparent) {
+          model.traverse((child) => {
+            if (child.isMesh) {
+              child.material.transparent = true
+              child.material.opacity = project.transparency / 100
+            }
+          })
+        }
+        
+        sceneRef.current.add(model)
+        meshRef.current = model
+        setIsLoading(false)
+        setLoadingProgress(100)
+      },
+      (xhr) => {
+        const progress = (xhr.loaded / xhr.total) * 100
+        setLoadingProgress(Math.min(progress, 95))
+      },
+      (error) => {
+        console.error('Error loading GLTF:', error)
+        setError('Failed to load 3D model. The file may be missing or corrupted.')
+        setShowPopup(true)
+        setIsLoading(false)
+      }
+    )
   }
 
   const updateCamera = () => {
@@ -227,320 +249,352 @@ function GLTFViewerModal({ project, onClose }) {
     ctrlRef.current.spherical.set(5, Math.PI / 3, Math.PI / 4)
     ctrlRef.current.target.set(0, 0, 0)
     ctrlRef.current.panOffset.set(0, 0, 0)
+    ctrlRef.current.viewState = { x: 0, y: 0, z: 0, perp: 0 }
   }
 
   const toggleTransparency = () => {
     if (!meshRef.current) return
     const newTransparent = !isTransparent
     setIsTransparent(newTransparent)
-    meshRef.current.material.transparent = newTransparent
-    meshRef.current.material.opacity = newTransparent ? project.transparency / 100 : 1.0
-    meshRef.current.material.needsUpdate = true
+    
+    meshRef.current.traverse((child) => {
+      if (child.isMesh) {
+        child.material.transparent = newTransparent
+        child.material.opacity = newTransparent ? project.transparency / 100 : 1.0
+        child.material.needsUpdate = true
+      }
+    })
+  }
+
+  // View controls
+  const setViewX = () => {
+    const s = ctrlRef.current.viewState.x
+    ctrlRef.current.spherical.theta = s ? -Math.PI / 2 : Math.PI / 2
+    ctrlRef.current.spherical.phi = Math.PI / 2
+    ctrlRef.current.viewState = { x: 1 - s, y: 0, z: 0, perp: 0 }
+  }
+
+  const setViewY = () => {
+    const s = ctrlRef.current.viewState.y
+    ctrlRef.current.spherical.theta = 0
+    ctrlRef.current.spherical.phi = s ? 0.1 : Math.PI - 0.1
+    ctrlRef.current.viewState = { x: 0, y: 1 - s, z: 0, perp: 0 }
+  }
+
+  const setViewZ = () => {
+    const s = ctrlRef.current.viewState.z
+    ctrlRef.current.spherical.theta = s ? Math.PI : 0
+    ctrlRef.current.spherical.phi = Math.PI / 2
+    ctrlRef.current.viewState = { x: 0, y: 0, z: 1 - s, perp: 0 }
+  }
+
+  const setViewPerpendicular = () => {
+    // Rotate 90 degrees from current view
+    ctrlRef.current.spherical.theta += Math.PI / 2
+    ctrlRef.current.viewState.perp = (ctrlRef.current.viewState.perp + 1) % 4
   }
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 100,
-        display: 'flex',
-        background: 'rgba(0,0,0,.95)',
-        backdropFilter: 'blur(8px)'
-      }}
-      onClick={onClose}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
-      {/* Top Controls */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          position: 'absolute',
-          top: '2rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: '.5rem',
-          background: 'rgba(0,0,0,.8)',
-          backdropFilter: 'blur(12px)',
-          padding: '.75rem 1rem',
-          borderRadius: '16px',
-          border: '1px solid rgba(255,255,255,.1)',
-          zIndex: 10
-        }}
-      >
+    <>
+      {showPopup && (
         <div
           style={{
-            padding: '0 1rem',
-            display: 'flex',
-            alignItems: 'center',
-            fontSize: '.9rem',
-            fontWeight: '600',
-            color: '#fff',
-            borderRight: '1px solid rgba(255,255,255,.2)'
+            position: 'fixed', inset: 0, zIndex: 200, display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,.85)', backdropFilter: 'blur(8px)',
+            animation: 'fadeIn .3s ease'
           }}
+          onClick={() => { setShowPopup(false); onClose() }}
         >
-          {project.title}
-        </div>
-
-        <button
-          onClick={resetView}
-          title="Reset View"
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            background: 'rgba(255,255,255,.1)',
-            border: '1px solid rgba(255,255,255,.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            color: '#fff'
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M3 12a9 9 0 109 9 9 9 0 00-9-9z" stroke="currentColor" strokeWidth="2" />
-            <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
-
-        <button
-          onClick={toggleTransparency}
-          title="Toggle Transparency"
-          style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            background: isTransparent ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.1)',
-            border: '1px solid rgba(255,255,255,.15)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            color: '#fff'
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.5" />
-            <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="2" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Close Button */}
-      <button
-        onClick={onClose}
-        style={{
-          position: 'absolute',
-          top: '2rem',
-          right: '2rem',
-          width: '48px',
-          height: '48px',
-          borderRadius: '50%',
-          background: 'rgba(0,0,0,.8)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255,255,255,.1)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10,
-          cursor: 'pointer',
-          color: '#fff'
-        }}
-      >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-
-      {/* Canvas Container */}
-      <div
-        ref={containerRef}
-        onClick={(e) => e.stopPropagation()}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onContextMenu={(e) => e.preventDefault()}
-        style={{
-          flex: 1,
-          position: 'relative',
-          display: 'flex',
-          cursor: ctrlRef.current.isRotating || ctrlRef.current.isPanning ? 'grabbing' : 'grab',
-          userSelect: 'none'
-        }}
-      >
-        {isLoading && (
           <div
+            onClick={e => e.stopPropagation()}
             style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.2rem',
-              color: '#fff'
+              maxWidth: '500px', width: '90%',
+              background: 'linear-gradient(135deg,rgba(15,20,32,.98),rgba(10,14,26,.98))',
+              borderRadius: '20px', border: '2px solid rgba(255,100,100,.5)',
+              boxShadow: '0 20px 60px rgba(0,0,0,.8)', padding: '2rem',
+              animation: 'slideUp .4s cubic-bezier(.4,0,.2,1)', textAlign: 'center'
             }}
           >
-            Loading model...
-          </div>
-        )}
-      </div>
-
-      {/* Info Panel */}
-      {showInfo && (
-        <div
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            position: 'absolute',
-            right: '2rem',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: '320px',
-            maxHeight: '80vh',
-            overflowY: 'auto',
-            background: 'rgba(0,0,0,.9)',
-            backdropFilter: 'blur(12px)',
-            borderRadius: '16px',
-            border: '1px solid rgba(255,255,255,.1)',
-            padding: '1.5rem',
-            zIndex: 10
-          }}
-        >
-          <button
-            onClick={() => setShowInfo(false)}
-            style={{
-              position: 'absolute',
-              top: '1rem',
-              right: '1rem',
-              width: '28px',
-              height: '28px',
+            <div style={{
+              width: '80px', height: '80px', margin: '0 auto 1.5rem',
               borderRadius: '50%',
-              background: 'rgba(255,255,255,.1)',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#fff'
+              background: 'linear-gradient(135deg,rgba(255,100,100,.2),rgba(255,100,100,.05))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,100,100,.9)" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: '#fff' }}>
+              Model Unavailable
+            </h2>
+            <p style={{ fontSize: '1rem', lineHeight: '1.6', color: 'rgba(255,255,255,.8)', marginBottom: '1.5rem' }}>
+              {error || 'Unable to load the 3D model. The file may be missing or corrupted.'}
+            </p>
+            <button
+              onClick={() => { setShowPopup(false); onClose() }}
+              style={{
+                padding: '.875rem 2rem',
+                background: 'linear-gradient(135deg,rgba(255,100,100,.8),rgba(255,100,100,.6))',
+                color: '#fff', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600',
+                cursor: 'pointer', transition: 'all .2s ease', width: '100%'
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!showPopup && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 100, display: 'flex',
+            background: 'rgba(0,0,0,.95)', backdropFilter: 'blur(8px)'
+          }}
+          onClick={onClose}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          {/* Top Controls */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute', top: '2rem', left: '50%', transform: 'translateX(-50%)',
+              display: 'flex', gap: '.5rem', background: 'rgba(0,0,0,.8)',
+              backdropFilter: 'blur(12px)', padding: '.75rem 1rem',
+              borderRadius: '16px', border: '1px solid rgba(255,255,255,.1)', zIndex: 10
             }}
           >
-            ✕
+            <div style={{
+              padding: '0 1rem', display: 'flex', alignItems: 'center',
+              fontSize: '.9rem', fontWeight: '600', color: '#fff',
+              borderRight: '1px solid rgba(255,255,255,.2)'
+            }}>
+              {project.title}
+            </div>
+
+            {/* View Controls */}
+            <button onClick={setViewX} title="View X axis" style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(255,100,100,.2)', border: '1px solid rgba(255,100,100,.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '.85rem', fontWeight: '700', color: '#ff6464', cursor: 'pointer'
+            }}>X</button>
+
+            <button onClick={setViewY} title="View Y axis" style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(100,255,100,.2)', border: '1px solid rgba(100,255,100,.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '.85rem', fontWeight: '700', color: '#64ff64', cursor: 'pointer'
+            }}>Y</button>
+
+            <button onClick={setViewZ} title="View Z axis" style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(100,100,255,.2)', border: '1px solid rgba(100,100,255,.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '.85rem', fontWeight: '700', color: '#6464ff', cursor: 'pointer'
+            }}>Z</button>
+
+            <button onClick={setViewPerpendicular} title="Perpendicular View" style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(255,255,100,.2)', border: '1px solid rgba(255,255,100,.4)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '.85rem', fontWeight: '700', color: '#ffff64', cursor: 'pointer'
+            }}>⊥</button>
+
+            <div style={{ width: '1px', height: '40px', background: 'rgba(255,255,255,.2)', margin: '0 .25rem' }} />
+
+            <button onClick={resetView} title="Reset View" style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff'
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M3 12a9 9 0 109 9 9 9 0 00-9-9z" stroke="currentColor" strokeWidth="2" />
+                <path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+
+            {project.transparency > 0 && (
+              <button onClick={toggleTransparency} title="Toggle Transparency" style={{
+                width: '40px', height: '40px', borderRadius: '10px',
+                background: isTransparent ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.1)',
+                border: '1px solid rgba(255,255,255,.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: '#fff'
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.5" />
+                  <circle cx="12" cy="12" r="6" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          {/* Close Button */}
+          <button onClick={onClose} style={{
+            position: 'absolute', top: '2rem', right: '2rem',
+            width: '48px', height: '48px', borderRadius: '50%',
+            background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,.1)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', zIndex: 10, cursor: 'pointer', color: '#fff'
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
 
-          <div style={{ fontSize: '12px', color: project.color, fontWeight: '600', marginBottom: '8px' }}>
-            {project.category}
+          {/* Canvas Container */}
+          <div
+            ref={containerRef}
+            onClick={(e) => e.stopPropagation()}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onContextMenu={(e) => e.preventDefault()}
+            style={{
+              flex: 1, position: 'relative', display: 'flex',
+              cursor: ctrlRef.current.isRotating || ctrlRef.current.isPanning ? 'grabbing' : 'grab',
+              userSelect: 'none'
+            }}
+          >
+            {isLoading && (
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex',
+                flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.2rem', color: '#fff', gap: '1.5rem',
+                background: 'rgba(10, 14, 26, 0.95)'
+              }}>
+                <div style={{
+                  width: '60px', height: '60px',
+                  border: '4px solid rgba(255, 255, 255, 0.1)',
+                  borderTop: '4px solid hsl(30, 100%, 60%)',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                
+                <div style={{ textAlign: 'center', maxWidth: '300px' }}>
+                  Loading 3D model...
+                </div>
+                
+                {loadingProgress > 0 && (
+                  <div style={{
+                    width: '300px', height: '6px', background: 'rgba(255,255,255,.1)',
+                    borderRadius: '3px', overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${loadingProgress}%`, height: '100%',
+                      background: 'linear-gradient(90deg, hsl(30, 100%, 60%), hsl(30, 100%, 70%))',
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <h3 style={{ fontSize: '24px', fontWeight: '700', color: '#fff', marginBottom: '16px' }}>
-            {project.title}
-          </h3>
-          <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'rgba(255,255,255,.7)', marginBottom: '20px' }}>
-            {project.description}
-          </p>
 
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.5)', marginBottom: '8px' }}>
-              YEAR
+          {/* Info Panel */}
+          {showInfo && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'absolute', right: '2rem', top: '50%', transform: 'translateY(-50%)',
+                width: '320px', maxHeight: '80vh', overflowY: 'auto',
+                background: 'rgba(0,0,0,.9)', backdropFilter: 'blur(12px)',
+                borderRadius: '16px', border: '1px solid rgba(255,255,255,.1)',
+                padding: '1.5rem', zIndex: 10
+              }}
+            >
+              <button
+                onClick={() => setShowInfo(false)}
+                style={{
+                  position: 'absolute', top: '1rem', right: '1rem',
+                  width: '28px', height: '28px', borderRadius: '50%',
+                  background: 'rgba(255,255,255,.1)', border: 'none',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', color: '#fff'
+                }}
+              >
+                ✕
+              </button>
+
+              <div style={{ fontSize: '12px', color: project.color, fontWeight: '600', marginBottom: '8px' }}>
+                {project.category}
+              </div>
+              <h3 style={{ fontSize: '24px', fontWeight: '700', color: '#fff', marginBottom: '16px' }}>
+                {project.title}
+              </h3>
+              <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'rgba(255,255,255,.7)', marginBottom: '20px' }}>
+                {project.description}
+              </p>
+
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.5)', marginBottom: '8px' }}>
+                  YEAR
+                </div>
+                <div style={{ fontSize: '16px', color: '#fff', fontWeight: '600' }}>{project.year}</div>
+              </div>
             </div>
-            <div style={{ fontSize: '16px', color: '#fff', fontWeight: '600' }}>{project.year}</div>
+          )}
+
+          {!showInfo && (
+            <button
+              onClick={() => setShowInfo(true)}
+              style={{
+                position: 'absolute', right: '2rem', top: '50%', transform: 'translateY(-50%)',
+                width: '48px', height: '48px', borderRadius: '50%',
+                background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(255,255,255,.1)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', zIndex: 10
+              }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                <line x1="12" y1="16" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <line x1="12" y1="8" x2="12.01" y2="8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
+
+          {/* Help Text */}
+          <div style={{
+            position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(12px)',
+            padding: '.75rem 1.5rem', borderRadius: '12px',
+            border: '1px solid rgba(255,255,255,.1)', fontSize: '.85rem',
+            color: 'rgba(255,255,255,.7)', display: 'flex', gap: '2rem', zIndex: 10
+          }}>
+            <span>
+              <kbd style={{
+                background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem',
+                borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem'
+              }}>Drag</kbd> to rotate
+            </span>
+            <span>
+              <kbd style={{
+                background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem',
+                borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem'
+              }}>Scroll</kbd> to zoom
+            </span>
+            <span>
+              <kbd style={{
+                background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem',
+                borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem'
+              }}>Right-click</kbd> to pan
+            </span>
           </div>
 
-          <div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.5)', marginBottom: '8px' }}>
-              TECHNOLOGIES
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {project.tags.map((tag, i) => (
-                <span
-                  key={i}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
-                    fontWeight: '500',
-                    background: 'rgba(255,255,255,.1)',
-                    color: 'rgba(255,255,255,.9)',
-                    border: '1px solid rgba(255,255,255,.15)'
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
+          <style jsx>{`
+            @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+          `}</style>
         </div>
       )}
-
-      {!showInfo && (
-        <button
-          onClick={() => setShowInfo(true)}
-          style={{
-            position: 'absolute',
-            right: '2rem',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: '48px',
-            height: '48px',
-            borderRadius: '50%',
-            background: 'rgba(0,0,0,.8)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255,255,255,.1)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            zIndex: 10
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-            <line x1="12" y1="16" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            <line x1="12" y1="8" x2="12.01" y2="8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
-      )}
-
-      {/* Help Text */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '2rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'rgba(0,0,0,.8)',
-          backdropFilter: 'blur(12px)',
-          padding: '.75rem 1.5rem',
-          borderRadius: '12px',
-          border: '1px solid rgba(255,255,255,.1)',
-          fontSize: '.85rem',
-          color: 'rgba(255,255,255,.7)',
-          display: 'flex',
-          gap: '2rem',
-          zIndex: 10
-        }}
-      >
-        <span>
-          <kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>
-            Drag
-          </kbd>{' '}
-          to rotate
-        </span>
-        <span>
-          <kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>
-            Scroll
-          </kbd>{' '}
-          to zoom
-        </span>
-        <span>
-          <kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>
-            Right-click
-          </kbd>{' '}
-          to pan
-        </span>
-      </div>
-    </div>
+    </>
   )
 }
 
@@ -570,7 +624,7 @@ export default function CADGalleryNormalized() {
     return () => window.removeEventListener('resize', calculateScale)
   }, [])
 
-  const projects = CADList
+  const projects = CADGLTFList
   const totalPages = Math.ceil(projects.length / PROJECTS_PER_PAGE)
 
   // Scroll detection
@@ -626,7 +680,7 @@ export default function CADGalleryNormalized() {
             gap: '0'
           }}
         >
-          {/* Header - MATCHES OTHER SECTIONS */}
+          {/* Header */}
           <div style={{ flexShrink: 0, marginBottom: '32px' }}>
             <div style={{
               fontSize: '14px',
@@ -661,77 +715,82 @@ export default function CADGalleryNormalized() {
           </div>
 
           {/* Page Navigation */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '20px',
-            marginBottom: '24px',
-            flexShrink: 0
-          }}>
-            <button
-              onClick={() => scrollToPage(Math.max(0, currentPage - 1))}
-              disabled={currentPage === 0}
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                background: currentPage === 0 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: currentPage === 0 ? 0.3 : 1,
-                transition: 'all 0.3s ease'
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
+          {totalPages > 1 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '20px',
+              marginBottom: '24px',
+              flexShrink: 0
+            }}>
+              <button
+                onClick={() => scrollToPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: currentPage === 0 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  cursor: currentPage === 0 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: currentPage === 0 ? 0.3 : 1,
+                  transition: 'all 0.3s ease'
+                }}
+                aria-label="Previous page"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              {Array.from({ length: totalPages }).map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => scrollToPage(idx)}
-                  style={{
-                    width: idx === currentPage ? '52px' : '36px',
-                    height: '7px',
-                    borderRadius: '4px',
-                    background: idx === currentPage ? 'hsl(var(--accent))' : 'rgba(255, 255, 255, 0.15)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow: idx === currentPage ? '0 0 12px hsl(var(--accent) / 0.5)' : 'none'
-                  }}
-                />
-              ))}
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                {Array.from({ length: totalPages }).map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => scrollToPage(idx)}
+                    style={{
+                      width: idx === currentPage ? '52px' : '36px',
+                      height: '7px',
+                      borderRadius: '4px',
+                      background: idx === currentPage ? 'hsl(var(--accent))' : 'rgba(255, 255, 255, 0.15)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: idx === currentPage ? '0 0 12px hsl(var(--accent) / 0.5)' : 'none'
+                    }}
+                    aria-label={`Go to page ${idx + 1}`}
+                  />
+                ))}
+              </div>
+
+              <button
+                onClick={() => scrollToPage(Math.min(totalPages - 1, currentPage + 1))}
+                disabled={currentPage === totalPages - 1}
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: currentPage === totalPages - 1 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  cursor: currentPage === totalPages - 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: currentPage === totalPages - 1 ? 0.3 : 1,
+                  transition: 'all 0.3s ease'
+                }}
+                aria-label="Next page"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
             </div>
-
-            <button
-              onClick={() => scrollToPage(Math.min(totalPages - 1, currentPage + 1))}
-              disabled={currentPage === totalPages - 1}
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                background: currentPage === totalPages - 1 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                cursor: currentPage === totalPages - 1 ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: currentPage === totalPages - 1 ? 0.3 : 1,
-                transition: 'all 0.3s ease'
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
+          )}
 
           {/* Horizontal Scroll Container */}
           <div 
@@ -777,98 +836,76 @@ export default function CADGalleryNormalized() {
                     .map((project) => (
                       <div
                         key={project.id}
-                        onClick={() => setSelectedProject(project)}
                         style={{
+                          position: 'relative',
                           borderRadius: '16px',
                           overflow: 'hidden',
                           background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01))',
                           border: '1px solid rgba(255, 255, 255, 0.08)',
-                          cursor: 'pointer',
-                          transition: 'transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
+                          transition: 'all 0.3s ease',
                           display: 'flex',
                           flexDirection: 'column'
                         }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-4px)'
-                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
-                          e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.4)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)'
-                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)'
-                          e.currentTarget.style.boxShadow = 'none'
-                        }}
+                        className="cad-card"
                       >
                         {/* Image */}
-                        <div style={{ position: 'relative', width: '100%', height: '240px', overflow: 'hidden' }}>
+                        <div style={{ position: 'relative', width: '100%', height: '280px', overflow: 'hidden' }}>
                           <img
                             src={project.coverPhoto}
                             alt={project.title}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: '12px',
-                              left: '12px',
-                              padding: '6px 12px',
-                              background: 'rgba(0, 0, 0, 0.8)',
-                              backdropFilter: 'blur(8px)',
-                              borderRadius: '6px',
-                              fontSize: '14px',
-                              fontWeight: '700',
-                              color: project.color
-                            }}
-                          >
+                          <div style={{
+                            position: 'absolute', top: '12px', left: '12px',
+                            padding: '6px 12px', background: 'rgba(0, 0, 0, 0.8)',
+                            backdropFilter: 'blur(8px)', borderRadius: '6px',
+                            fontSize: '14px', fontWeight: '700', color: project.color
+                          }}>
                             {project.year}
                           </div>
                         </div>
 
                         {/* Content */}
                         <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                          <h3
-                            style={{
-                              fontSize: '20px',
-                              fontWeight: '700',
-                              color: '#fff',
-                              marginBottom: '8px'
-                            }}
-                          >
+                          <h3 style={{
+                            fontSize: '20px', fontWeight: '700', color: '#fff', marginBottom: '8px'
+                          }}>
                             {project.title}
                           </h3>
-                          <div
-                            style={{
-                              fontSize: '14px',
-                              color: 'rgba(255, 255, 255, 0.5)',
-                              fontWeight: '500',
-                              marginBottom: '12px'
-                            }}
-                          >
+                          <div style={{
+                            fontSize: '14px', color: 'rgba(255, 255, 255, 0.5)',
+                            fontWeight: '500', marginBottom: '12px'
+                          }}>
                             {project.category}
                           </div>
-                          <div style={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: '8px',
-                            marginTop: 'auto'
+                          <p style={{
+                            fontSize: '14px', lineHeight: '1.6',
+                            color: 'rgba(255, 255, 255, 0.7)', flex: 1
                           }}>
-                            {project.tags.slice(0, 3).map((tag, i) => (
-                              <span
-                                key={i}
-                                style={{
-                                  padding: '5px 10px',
-                                  borderRadius: '6px',
-                                  fontSize: '11px',
-                                  fontWeight: '500',
-                                  background: 'rgba(255, 255, 255, 0.06)',
-                                  color: 'rgba(255, 255, 255, 0.8)',
-                                  border: '1px solid rgba(255, 255, 255, 0.1)'
-                                }}
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
+                            {project.description}
+                          </p>
+
+                          {/* View 3D Button */}
+                          <button
+                            onClick={() => setSelectedProject(project)}
+                            style={{
+                              marginTop: '16px', padding: '12px 20px', borderRadius: '10px',
+                              fontSize: '14px', fontWeight: '600',
+                              background: `linear-gradient(135deg, ${project.color}, ${project.color}90)`,
+                              color: '#0a0e1a', border: 'none', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              gap: '8px', transition: 'all 0.2s ease',
+                              boxShadow: `0 4px 12px ${project.color}40`
+                            }}
+                            className="view-3d-button"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            View in 3D
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -884,6 +921,34 @@ export default function CADGalleryNormalized() {
       <style jsx>{`
         div::-webkit-scrollbar {
           display: none;
+        }
+
+        .cad-card:hover {
+          transform: translateY(-4px);
+          border-color: rgba(255, 255, 255, 0.15);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .view-3d-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+          opacity: 0.9;
+        }
+
+        .view-3d-button:active {
+          transform: translateY(0);
+        }
+
+        button:not(:disabled):hover {
+          background: rgba(255, 255, 255, 0.15) !important;
+          transform: scale(1.1);
+        }
+
+        @media (max-width: 1200px) {
+          div[style*="grid-template-columns: repeat(2, 1fr)"] {
+            grid-template-columns: 1fr !important;
+            grid-template-rows: auto !important;
+          }
         }
       `}</style>
     </>
