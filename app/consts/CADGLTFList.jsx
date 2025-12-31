@@ -6,61 +6,133 @@ const CADGLTFList = [
     title: 'Guitar Design',
     category: 'Product Design',
     year: '2022',
-    description: 'Detailed CAD model of an acoustic guitar featuring advanced surface modeling techniques, assembly design, and precise component integration.',
+    description: 'Detailed CAD model of an acoustic guitar featuring advanced surface modeling techniques, assembly design, and precise component integration. Showcases complex organic surfaces and realistic detailing.',
     coverPhoto: '/Projects/Guitar Design Project/Guitar Design Project (1).jpg',
-    gltfFile: '/CAD/Guitar/Guitar.gltf',
+    gltfFile: '/CAD/Guitar 2022/Guitar.gltf',
     color: '#ff6b35',
-    modelColor: '#8B4513', // Brown wood color for guitar
+    modelColor: '#8B4513',
     transparency: 0
   },
   {
     id: 2,
-    title: 'Aerofoil',
-    category: 'Aerodynamics',
-    year: '2022',
-    description: 'Precision aerodynamic profile designed for optimal lift-to-drag ratio in subsonic flow conditions.',
-    coverPhoto: '/CAD/Airofoil/Airofoil.JPG',
-    gltfFile: '/CAD/Aerofoil/Aerofoil.gltf',
+    title: 'Bicycle Frame',
+    category: 'Transportation',
+    year: '2024',
+    description: 'Complete bicycle frame model with accurate geometry and structural components. Demonstrates mechanical assembly and frame design principles for two-wheeled transportation.',
+    coverPhoto: '/CAD/bike/bike-preview.jpeg',
+    gltfFile: '/CAD/bike/bike.gltf',
     color: '#4ecdc4',
-    modelColor: '#4ecdc4', // Teal
-    transparency: 50
+    modelColor: '#2C2C2C',
+    transparency: 0
   },
   {
     id: 3,
-    title: 'Wind Tunnel Test Section',
-    category: 'Experimental Equipment',
+    title: 'Burner Head Assembly',
+    category: 'Thermal Systems',
     year: '2024',
-    description: 'Precision 3D model of wind tunnel test section from field measurements with 0.01mm tolerance.',
-    coverPhoto: '/Projects/CAD Modeling of Wind Tunnel Test Section/CAD Modeling of Wind Tunnel Test Section.jpg',
-    gltfFile: '/CAD/WindTunnel/tunnel.gltf',
-    color: '#8338ec',
-    modelColor: '#C0C0C0', // Metallic silver
-    transparency: 30
+    description: 'Industrial burner head assembly with complete component breakdown. Features gas distribution channels, ignition system integration, and thermal management design for combustion applications.',
+    coverPhoto: '/CAD/Burner Head/burner-perview.jpg',
+    gltfFile: '/CAD/Burner Head/BurnerAssem.gltf',
+    color: '#ff7b00',
+    modelColor: '#B87333',
+    transparency: 0
   },
   {
     id: 4,
-    title: 'Solar Vortex Engine',
-    category: 'Energy Systems',
+    title: 'Propeller Blade',
+    category: 'Aerodynamics',
     year: '2024',
-    description: 'Research-grade CAD model designed for CFD baseline and parametric optimization studies.',
-    coverPhoto: '/Projects/SVE/SVE (1).png',
-    gltfFile: '/CAD/SVE/sve.gltf',
-    color: '#ffbe0b',
-    modelColor: '#FFD700', // Gold
+    description: 'High-efficiency propeller blade design optimized for thrust generation. Features twisted airfoil geometry with precise pitch control for drone and aviation applications.',
+    coverPhoto: '/CAD/Propeller/Propeller-preview.jpg',
+    gltfFile: '/CAD/Propeller/propeller.gltf',
+    color: '#48cae4',
+    modelColor: '#708090',
     transparency: 0
   },
   {
     id: 5,
-    title: 'Drone Frame',
-    category: 'Reverse Engineering',
+    title: 'S500 Drone Frame',
+    category: 'UAV Systems',
     year: '2024',
-    description: 'Complete reverse-engineered model from 3D scans with 0.01mm tolerance.',
+    description: 'Complete reverse-engineered S500 quadcopter frame from 3D scans with 0.01mm tolerance. Includes motor mounts, landing gear, and electronics housing with optimized weight distribution.',
     coverPhoto: '/Projects/Reverse Engineering of a S500 Drone/Reverse Engineering of a S500 Drone (1).jpg',
-    gltfFile: '/CAD/Drone/drone.gltf',
+    gltfFile: '/CAD/S500-Frame/Base Frame.gltf',
     color: '#06ffa5',
-    modelColor: '#2C2C2C', // Dark carbon fiber
+    modelColor: '#2C2C2C',
     transparency: 0
-  }
+  },
+  {
+    id: 6,
+    title: 'Roof Mounted Solar Panel',
+    category: 'Renewable Energy',
+    year: '2024',
+    description: 'Parapet-mounted solar panel assembly designed for wind load analysis. Features adjustable tilt angles, structural reinforcement, and modular mounting system for rooftop installations.',
+    coverPhoto: '/CAD/SolarPanelOnARoof/Solar-panels-on-flat-roof-1.jpeg',
+    gltfFile: '/CAD/SolarPanelonaRoof/Unnamed6-assemFusion.gltf',
+    color: '#90e0ef',
+    modelColor: '#4169E1',
+    transparency: 30
+  },
+  {
+    id: 7,
+    title: 'Solar Vortex Engine',
+    category: 'Energy Systems',
+    year: '2024',
+    description: 'Research-grade CAD model of solar vortex engine with complete internal flow path. Designed for CFD baseline studies and parametric optimization of thermal-to-mechanical energy conversion.',
+    coverPhoto: '/Projects/SVE/SVE (1).png',
+    gltfFile: '/CAD/SVE/SVE.gltf',
+    color: '#ffbe0b',
+    modelColor: '#FFD700',
+    transparency: 40
+  },
+  {
+    id: 8,
+    title: 'Tire Design',
+    category: 'Automotive',
+    year: '2024',
+    description: 'Detailed tire model featuring realistic tread pattern, sidewall geometry, and structural components. Suitable for vehicle dynamics simulation and contact mechanics analysis.',
+    coverPhoto: '/CAD/Tire/Tire.jpg',
+    gltfFile: '/CAD/Tire/Tire.gltf',
+    color: '#2C2C2C',
+    modelColor: '#1C1C1C',
+    transparency: 0
+  },
+  {
+    id: 9,
+    title: 'Toroidal Propeller',
+    category: 'Advanced Aerodynamics',
+    year: '2024',
+    description: 'Novel toroidal propeller design for reduced noise and improved efficiency. Features continuous blade geometry in a ring configuration for next-generation drone applications.',
+    coverPhoto: '/CAD/toroidalProp/ToroidalProp.png',
+    gltfFile: '/CAD/toroidalProp/Toroidal Propeller CCW.gltf',
+    color: '#9d4edd',
+    modelColor: '#4169E1',
+    transparency: 0
+  },
+  {
+    id: 10,
+    title: 'Truck Model',
+    category: 'Transportation',
+    year: '2024',
+    description: 'Complete truck model for aerodynamic analysis and platooning simulations. Includes cab, trailer, and detailed underbody geometry for drag reduction studies.',
+    coverPhoto: '/CAD/TruckModel/truck-preview.jpg',
+    gltfFile: '/CAD/TruckModel/Truck.gltf',
+    color: '#ef233c',
+    modelColor: '#8B0000',
+    transparency: 0
+  },
+  {
+    id: 11,
+    title: 'Wind Tunnel Test Section',
+    category: 'Experimental Equipment',
+    year: '2024',
+    description: 'Precision 3D model of wind tunnel test section from field measurements with 0.01mm tolerance. Includes flow conditioning elements and measurement instrumentation mounting points.',
+    coverPhoto: '/Projects/CAD Modeling of Wind Tunnel Test Section/CAD Modeling of Wind Tunnel Test Section.jpg',
+    gltfFile: '/CAD/WindTunnelModelling/wind-tunnel.gltf',
+    color: '#8338ec',
+    modelColor: '#C0C0C0',
+    transparency: 30
+  },
 ]
 
 export default CADGLTFList

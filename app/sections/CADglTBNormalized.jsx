@@ -1,12 +1,8 @@
 "use client"
 import { useState, useEffect, useRef } from 'react'
+import CADGLTFList from '../consts/CADGLTFList'
 
-import CADGLTFList  from '../consts/CADGLTFList'
-
-// CAD Projects List
-
-
-// GLTFViewerModal Component
+// GLTFViewerModal Component with STL Support
 function GLTFViewerModal({ project, onClose }) {
   const containerRef = useRef(null)
   const sceneRef = useRef(null)
@@ -33,7 +29,12 @@ function GLTFViewerModal({ project, onClose }) {
     viewState: { x: 0, y: 0, z: 0, perp: 0 }
   })
 
-  // Load Three.js and GLTFLoader
+  // Determine file type
+  const fileExtension = project.gltfFile.toLowerCase().split('.').pop()
+  const isSTL = fileExtension === 'stl'
+  const isGLTF = fileExtension === 'gltf' || fileExtension === 'glb'
+
+  // Load Three.js and appropriate loader
   useEffect(() => {
     if (typeof window === 'undefined') return
     
@@ -41,14 +42,45 @@ function GLTFViewerModal({ project, onClose }) {
       if (!window.THREE) {
         const script = document.createElement('script')
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
-        script.onload = () => loadGLTFLoader()
+        script.onload = () => loadModelLoader()
         script.onerror = () => {
           setError('Could not load 3D engine')
           setShowPopup(true)
         }
         document.head.appendChild(script)
       } else {
+        loadModelLoader()
+      }
+    }
+
+    const loadModelLoader = () => {
+      // Load appropriate loader based on file type
+      if (isSTL) {
+        loadSTLLoader()
+      } else if (isGLTF) {
         loadGLTFLoader()
+      } else {
+        setError('Unsupported file format')
+        setShowPopup(true)
+      }
+    }
+
+    const loadSTLLoader = () => {
+      if (!window.THREE.STLLoader) {
+        const loaderScript = document.createElement('script')
+        loaderScript.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js'
+        loaderScript.onload = () => {
+          setThreeReady(true)
+          setLoadingProgress(20)
+        }
+        loaderScript.onerror = () => {
+          setError('Could not load STL loader')
+          setShowPopup(true)
+        }
+        document.head.appendChild(loaderScript)
+      } else {
+        setThreeReady(true)
+        setLoadingProgress(20)
       }
     }
 
@@ -72,7 +104,7 @@ function GLTFViewerModal({ project, onClose }) {
     }
 
     loadThreeJS()
-  }, [])
+  }, [isSTL, isGLTF])
 
   // Scene setup
   useEffect(() => {
@@ -112,7 +144,7 @@ function GLTFViewerModal({ project, onClose }) {
     ctrlRef.current.spherical = new THREE.Spherical(5, Math.PI / 3, Math.PI / 4)
     ctrlRef.current.panOffset = new THREE.Vector3()
 
-    loadGLTF(project.gltfFile)
+    loadModel(project.gltfFile)
 
     const onResize = () => {
       if (!containerRef.current) return
@@ -140,11 +172,79 @@ function GLTFViewerModal({ project, onClose }) {
     }
   }, [project, threeReady])
 
-  function loadGLTF(url) {
+  function loadModel(url) {
     const THREE = window.THREE
     setLoadingProgress(40)
     setIsLoading(true)
 
+    if (isSTL) {
+      loadSTLModel(url, THREE)
+    } else if (isGLTF) {
+      loadGLTFModel(url, THREE)
+    }
+  }
+
+  function loadSTLModel(url, THREE) {
+    if (!THREE.STLLoader) {
+      setError('STL Loader not available')
+      setShowPopup(true)
+      setIsLoading(false)
+      return
+    }
+
+    const loader = new THREE.STLLoader()
+    
+    loader.load(
+      url,
+      (geometry) => {
+        setLoadingProgress(80)
+        
+        // Center geometry
+        geometry.computeBoundingBox()
+        const center = new THREE.Vector3()
+        geometry.boundingBox.getCenter(center)
+        geometry.translate(-center.x, -center.y, -center.z)
+        
+        // Compute vertex normals for smooth shading
+        geometry.computeVertexNormals()
+        
+        // Create material with project color
+        const material = new THREE.MeshPhongMaterial({
+          color: new THREE.Color(project.modelColor || project.color),
+          transparent: isTransparent,
+          opacity: isTransparent ? project.transparency / 100 : 1.0,
+          side: THREE.DoubleSide,
+          shininess: 30
+        })
+        
+        const mesh = new THREE.Mesh(geometry, material)
+        
+        // Scale to fit view
+        const bbox = new THREE.Box3().setFromObject(mesh)
+        const size = bbox.getSize(new THREE.Vector3())
+        const maxDim = Math.max(size.x, size.y, size.z)
+        const scale = 2 / maxDim
+        mesh.scale.setScalar(scale)
+        
+        sceneRef.current.add(mesh)
+        meshRef.current = mesh
+        setIsLoading(false)
+        setLoadingProgress(100)
+      },
+      (xhr) => {
+        const progress = (xhr.loaded / xhr.total) * 100
+        setLoadingProgress(Math.min(progress, 95))
+      },
+      (error) => {
+        console.error('Error loading STL:', error)
+        setError('model_unavailable')
+        setShowPopup(true)
+        setIsLoading(false)
+      }
+    )
+  }
+
+  function loadGLTFModel(url, THREE) {
     if (!THREE.GLTFLoader) {
       setError('GLTF Loader not available')
       setShowPopup(true)
@@ -261,16 +361,24 @@ function GLTFViewerModal({ project, onClose }) {
     const newTransparent = !isTransparent
     setIsTransparent(newTransparent)
     
-    meshRef.current.traverse((child) => {
-      if (child.isMesh) {
-        child.material.transparent = newTransparent
-        child.material.opacity = newTransparent ? project.transparency / 100 : 1.0
-        if (project.modelColor) {
-          child.material.color = new window.THREE.Color(project.modelColor)
+    if (isSTL) {
+      // For STL, directly update the mesh material
+      meshRef.current.material.transparent = newTransparent
+      meshRef.current.material.opacity = newTransparent ? project.transparency / 100 : 1.0
+      meshRef.current.material.needsUpdate = true
+    } else {
+      // For GLTF, traverse and update all meshes
+      meshRef.current.traverse((child) => {
+        if (child.isMesh) {
+          child.material.transparent = newTransparent
+          child.material.opacity = newTransparent ? project.transparency / 100 : 1.0
+          if (project.modelColor) {
+            child.material.color = new window.THREE.Color(project.modelColor)
+          }
+          child.material.needsUpdate = true
         }
-        child.material.needsUpdate = true
-      }
-    })
+      })
+    }
   }
 
   const setViewX = () => {
@@ -539,6 +647,24 @@ function GLTFViewerModal({ project, onClose }) {
                 </div>
                 <div style={{ fontSize: '16px', color: '#fff', fontWeight: '600' }}>{project.year}</div>
               </div>
+              
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.5)', marginBottom: '8px' }}>
+                  FILE FORMAT
+                </div>
+                <div style={{ 
+                  fontSize: '14px', 
+                  color: '#fff', 
+                  fontWeight: '600',
+                  padding: '6px 12px',
+                  background: 'rgba(255,255,255,.1)',
+                  borderRadius: '6px',
+                  display: 'inline-block',
+                  fontFamily: 'monospace'
+                }}>
+                  {fileExtension.toUpperCase()}
+                </div>
+              </div>
             </div>
           )}
 
@@ -570,22 +696,19 @@ function GLTFViewerModal({ project, onClose }) {
             color: 'rgba(255,255,255,.7)', display: 'flex', gap: '2rem', zIndex: 10
           }}>
             <span>
-              <kbd style={{
-                background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem',
-                borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem'
-              }}>Drag</kbd> to rotate
+              <kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>
+                Drag
+              </kbd> to rotate
             </span>
             <span>
-              <kbd style={{
-                background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem',
-                borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem'
-              }}>Scroll</kbd> to zoom
+              <kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>
+                Scroll
+              </kbd> to zoom
             </span>
             <span>
-              <kbd style={{
-                background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem',
-                borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem'
-              }}>Right-click</kbd> to pan
+              <kbd style={{ background: 'rgba(255,255,255,.1)', padding: '.25rem .5rem', borderRadius: '4px', fontFamily: 'monospace', fontSize: '.8rem' }}>
+                Right-click
+              </kbd> to pan
             </span>
           </div>
 
@@ -600,7 +723,7 @@ function GLTFViewerModal({ project, onClose }) {
   )
 }
 
-// Main CAD Gallery Component
+// Main CAD Gallery Component (unchanged, uses the updated viewer)
 export default function CADGalleryNormalized() {
   const [selectedProject, setSelectedProject] = useState(null)
   const [scale, setScale] = useState(1)
@@ -678,7 +801,6 @@ export default function CADGalleryNormalized() {
             gap: '0'
           }}
         >
-          {/* Header */}
           <div style={{ flexShrink: 0, marginBottom: '32px' }}>
             <div style={{
               fontSize: '14px',
@@ -712,7 +834,6 @@ export default function CADGalleryNormalized() {
             </p>
           </div>
 
-          {/* Page Navigation */}
           {totalPages > 1 && (
             <div style={{
               display: 'flex',
@@ -787,7 +908,6 @@ export default function CADGalleryNormalized() {
             </div>
           )}
 
-          {/* Horizontal Scroll Container */}
           <div 
             ref={scrollContainerRef}
             style={{
@@ -844,7 +964,6 @@ export default function CADGalleryNormalized() {
                         }}
                         className="cad-card"
                       >
-                        {/* Image with overlays */}
                         <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
                           <img
                             src={project.coverPhoto}
@@ -852,7 +971,6 @@ export default function CADGalleryNormalized() {
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                           
-                          {/* Gradient overlay for better text readability */}
                           <div style={{
                             position: 'absolute',
                             bottom: 0,
@@ -863,7 +981,6 @@ export default function CADGalleryNormalized() {
                             pointerEvents: 'none'
                           }} />
 
-                          {/* Year badge - Top Left */}
                           <div
                             style={{
                               position: 'absolute',
@@ -881,7 +998,6 @@ export default function CADGalleryNormalized() {
                             {project.year}
                           </div>
 
-                          {/* Title - Bottom Left */}
                           <h3
                             style={{
                               position: 'absolute',
@@ -898,7 +1014,6 @@ export default function CADGalleryNormalized() {
                             {project.title}
                           </h3>
 
-                          {/* View 3D Button - Bottom Right */}
                           <button
                             onClick={() => setSelectedProject(project)}
                             style={{
