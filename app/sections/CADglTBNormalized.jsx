@@ -1,8 +1,12 @@
 "use client"
 import { useState, useEffect, useRef } from 'react'
-import CADGLTFList from '../consts/CADGLTFList'
 
-// Import GLTFViewerModal component (will create separately)
+import CADGLTFList  from '../consts/CADGLTFList'
+
+// CAD Projects List
+
+
+// GLTFViewerModal Component
 function GLTFViewerModal({ project, onClose }) {
   const containerRef = useRef(null)
   const sceneRef = useRef(null)
@@ -34,7 +38,6 @@ function GLTFViewerModal({ project, onClose }) {
     if (typeof window === 'undefined') return
     
     const loadThreeJS = async () => {
-      // Load Three.js if not already loaded
       if (!window.THREE) {
         const script = document.createElement('script')
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
@@ -50,7 +53,6 @@ function GLTFViewerModal({ project, onClose }) {
     }
 
     const loadGLTFLoader = () => {
-      // Inject GLTFLoader
       if (!window.THREE.GLTFLoader) {
         const loaderScript = document.createElement('script')
         loaderScript.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js'
@@ -143,7 +145,6 @@ function GLTFViewerModal({ project, onClose }) {
     setLoadingProgress(40)
     setIsLoading(true)
 
-    // Check if GLTFLoader is available
     if (!THREE.GLTFLoader) {
       setError('GLTF Loader not available')
       setShowPopup(true)
@@ -159,7 +160,6 @@ function GLTFViewerModal({ project, onClose }) {
         setLoadingProgress(80)
         const model = gltf.scene
         
-        // Center and scale model
         const box = new THREE.Box3().setFromObject(model)
         const center = box.getCenter(new THREE.Vector3())
         const size = box.getSize(new THREE.Vector3())
@@ -169,15 +169,19 @@ function GLTFViewerModal({ project, onClose }) {
         const scale = 2 / maxDim
         model.scale.setScalar(scale)
         
-        // Apply transparency if needed
-        if (isTransparent) {
-          model.traverse((child) => {
-            if (child.isMesh) {
+        // Apply model color and transparency
+        model.traverse((child) => {
+          if (child.isMesh) {
+            if (project.modelColor) {
+              child.material.color = new THREE.Color(project.modelColor)
+            }
+            if (isTransparent) {
               child.material.transparent = true
               child.material.opacity = project.transparency / 100
             }
-          })
-        }
+            child.material.needsUpdate = true
+          }
+        })
         
         sceneRef.current.add(model)
         meshRef.current = model
@@ -190,7 +194,7 @@ function GLTFViewerModal({ project, onClose }) {
       },
       (error) => {
         console.error('Error loading GLTF:', error)
-        setError('Failed to load 3D model. The file may be missing or corrupted.')
+        setError('model_unavailable')
         setShowPopup(true)
         setIsLoading(false)
       }
@@ -261,12 +265,14 @@ function GLTFViewerModal({ project, onClose }) {
       if (child.isMesh) {
         child.material.transparent = newTransparent
         child.material.opacity = newTransparent ? project.transparency / 100 : 1.0
+        if (project.modelColor) {
+          child.material.color = new window.THREE.Color(project.modelColor)
+        }
         child.material.needsUpdate = true
       }
     })
   }
 
-  // View controls
   const setViewX = () => {
     const s = ctrlRef.current.viewState.x
     ctrlRef.current.spherical.theta = s ? -Math.PI / 2 : Math.PI / 2
@@ -289,7 +295,6 @@ function GLTFViewerModal({ project, onClose }) {
   }
 
   const setViewPerpendicular = () => {
-    // Rotate 90 degrees from current view
     ctrlRef.current.spherical.theta += Math.PI / 2
     ctrlRef.current.viewState.perp = (ctrlRef.current.viewState.perp + 1) % 4
   }
@@ -309,41 +314,41 @@ function GLTFViewerModal({ project, onClose }) {
           <div
             onClick={e => e.stopPropagation()}
             style={{
-              maxWidth: '500px', width: '90%',
+              maxWidth: '540px', width: '90%',
               background: 'linear-gradient(135deg,rgba(15,20,32,.98),rgba(10,14,26,.98))',
-              borderRadius: '20px', border: '2px solid rgba(255,100,100,.5)',
-              boxShadow: '0 20px 60px rgba(0,0,0,.8)', padding: '2rem',
+              borderRadius: '20px', border: '2px solid rgba(255,180,100,.4)',
+              boxShadow: '0 20px 60px rgba(0,0,0,.8)', padding: '2.5rem',
               animation: 'slideUp .4s cubic-bezier(.4,0,.2,1)', textAlign: 'center'
             }}
           >
             <div style={{
               width: '80px', height: '80px', margin: '0 auto 1.5rem',
               borderRadius: '50%',
-              background: 'linear-gradient(135deg,rgba(255,100,100,.2),rgba(255,100,100,.05))',
+              background: 'linear-gradient(135deg,rgba(255,180,100,.2),rgba(255,180,100,.05))',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,100,100,.9)" strokeWidth="2">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(255,180,100,.9)" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
             <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1rem', color: '#fff' }}>
-              Model Unavailable
+              Model Currently Unavailable
             </h2>
-            <p style={{ fontSize: '1rem', lineHeight: '1.6', color: 'rgba(255,255,255,.8)', marginBottom: '1.5rem' }}>
-              {error || 'Unable to load the 3D model. The file may be missing or corrupted.'}
+            <p style={{ fontSize: '1rem', lineHeight: '1.7', color: 'rgba(255,255,255,.85)', marginBottom: '1.5rem' }}>
+              As I've recently transitioned between colleges, I no longer have access to the same CAD software and tools. Unfortunately, this means I'm currently unable to showcase this 3D model. I'm working on regaining access to properly display my portfolio work.
             </p>
             <button
               onClick={() => { setShowPopup(false); onClose() }}
               style={{
                 padding: '.875rem 2rem',
-                background: 'linear-gradient(135deg,rgba(255,100,100,.8),rgba(255,100,100,.6))',
-                color: '#fff', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600',
+                background: 'linear-gradient(135deg,rgba(255,180,100,.85),rgba(255,180,100,.65))',
+                color: '#0a0e1a', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '600',
                 cursor: 'pointer', transition: 'all .2s ease', width: '100%'
               }}
             >
-              Close
+              Understood
             </button>
           </div>
         </div>
@@ -378,7 +383,6 @@ function GLTFViewerModal({ project, onClose }) {
               {project.title}
             </div>
 
-            {/* View Controls */}
             <button onClick={setViewX} title="View X axis" style={{
               width: '40px', height: '40px', borderRadius: '10px',
               background: 'rgba(255,100,100,.2)', border: '1px solid rgba(255,100,100,.4)',
@@ -436,7 +440,6 @@ function GLTFViewerModal({ project, onClose }) {
             )}
           </div>
 
-          {/* Close Button */}
           <button onClick={onClose} style={{
             position: 'absolute', top: '2rem', right: '2rem',
             width: '48px', height: '48px', borderRadius: '50%',
@@ -449,7 +452,6 @@ function GLTFViewerModal({ project, onClose }) {
             </svg>
           </button>
 
-          {/* Canvas Container */}
           <div
             ref={containerRef}
             onClick={(e) => e.stopPropagation()}
@@ -497,7 +499,6 @@ function GLTFViewerModal({ project, onClose }) {
             )}
           </div>
 
-          {/* Info Panel */}
           {showInfo && (
             <div
               onClick={(e) => e.stopPropagation()}
@@ -561,7 +562,6 @@ function GLTFViewerModal({ project, onClose }) {
             </button>
           )}
 
-          {/* Help Text */}
           <div style={{
             position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
             background: 'rgba(0,0,0,.8)', backdropFilter: 'blur(12px)',
@@ -591,6 +591,8 @@ function GLTFViewerModal({ project, onClose }) {
 
           <style jsx>{`
             @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+            @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+            @keyframes slideUp { from { transform: translateY(20px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
           `}</style>
         </div>
       )}
@@ -609,7 +611,6 @@ export default function CADGalleryNormalized() {
   const BASE_HEIGHT = 1080
   const PROJECTS_PER_PAGE = 4
 
-  // Scale calculation
   useEffect(() => {
     const calculateScale = () => {
       const viewportWidth = window.innerWidth
@@ -627,7 +628,6 @@ export default function CADGalleryNormalized() {
   const projects = CADGLTFList
   const totalPages = Math.ceil(projects.length / PROJECTS_PER_PAGE)
 
-  // Scroll detection
   useEffect(() => {
     const container = scrollContainerRef.current
     if (!container) return
@@ -655,7 +655,6 @@ export default function CADGalleryNormalized() {
 
   return (
     <>
-      {/* Main scaled container */}
       <div
         style={{
           transform: `scale(${scale})`,
@@ -669,7 +668,6 @@ export default function CADGalleryNormalized() {
           justifyContent: 'center'
         }}
       >
-        {/* Content container */}
         <div
           style={{
             position: 'relative',
@@ -740,7 +738,6 @@ export default function CADGalleryNormalized() {
                   opacity: currentPage === 0 ? 0.3 : 1,
                   transition: 'all 0.3s ease'
                 }}
-                aria-label="Previous page"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -756,13 +753,12 @@ export default function CADGalleryNormalized() {
                       width: idx === currentPage ? '52px' : '36px',
                       height: '7px',
                       borderRadius: '4px',
-                      background: idx === currentPage ? 'hsl(var(--accent))' : 'rgba(255, 255, 255, 0.15)',
+                      background: idx === currentPage ? 'hsl(140, 70%, 60%)' : 'rgba(255, 255, 255, 0.15)',
                       border: 'none',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
-                      boxShadow: idx === currentPage ? '0 0 12px hsl(var(--accent) / 0.5)' : 'none'
+                      boxShadow: idx === currentPage ? '0 0 12px hsl(140, 70%, 60% / 0.5)' : 'none'
                     }}
-                    aria-label={`Go to page ${idx + 1}`}
                   />
                 ))}
               </div>
@@ -783,7 +779,6 @@ export default function CADGalleryNormalized() {
                   opacity: currentPage === totalPages - 1 ? 0.3 : 1,
                   transition: 'all 0.3s ease'
                 }}
-                aria-label="Next page"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -828,8 +823,8 @@ export default function CADGalleryNormalized() {
                   gridTemplateRows: 'repeat(2, 1fr)',
                   gap: '24px',
                   width: '100%',
-                  height: 'fit-content',
-                  maxHeight: '100%'
+                  height: '100%',
+                  maxHeight: '720px'
                 }}>
                   {projects
                     .slice(pageIndex * PROJECTS_PER_PAGE, (pageIndex + 1) * PROJECTS_PER_PAGE)
@@ -837,74 +832,102 @@ export default function CADGalleryNormalized() {
                       <div
                         key={project.id}
                         style={{
-                          position: 'relative',
                           borderRadius: '16px',
                           overflow: 'hidden',
                           background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01))',
                           border: '1px solid rgba(255, 255, 255, 0.08)',
-                          transition: 'all 0.3s ease',
+                          transition: 'transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
                           display: 'flex',
-                          flexDirection: 'column'
+                          flexDirection: 'column',
+                          position: 'relative',
+                          height: '100%'
                         }}
                         className="cad-card"
                       >
-                        {/* Image */}
-                        <div style={{ position: 'relative', width: '100%', height: '280px', overflow: 'hidden' }}>
+                        {/* Image with overlays */}
+                        <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
                           <img
                             src={project.coverPhoto}
                             alt={project.title}
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
+                          
+                          {/* Gradient overlay for better text readability */}
                           <div style={{
-                            position: 'absolute', top: '12px', left: '12px',
-                            padding: '6px 12px', background: 'rgba(0, 0, 0, 0.8)',
-                            backdropFilter: 'blur(8px)', borderRadius: '6px',
-                            fontSize: '14px', fontWeight: '700', color: project.color
-                          }}>
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: '40%',
+                            background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                            pointerEvents: 'none'
+                          }} />
+
+                          {/* Year badge - Top Left */}
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '12px',
+                              left: '12px',
+                              padding: '6px 12px',
+                              background: 'rgba(0, 0, 0, 0.8)',
+                              backdropFilter: 'blur(8px)',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                              fontWeight: '700',
+                              color: project.color
+                            }}
+                          >
                             {project.year}
                           </div>
-                        </div>
 
-                        {/* Content */}
-                        <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                          <h3 style={{
-                            fontSize: '20px', fontWeight: '700', color: '#fff', marginBottom: '8px'
-                          }}>
+                          {/* Title - Bottom Left */}
+                          <h3
+                            style={{
+                              position: 'absolute',
+                              bottom: '16px',
+                              left: '16px',
+                              fontSize: '22px',
+                              fontWeight: '700',
+                              color: '#fff',
+                              margin: 0,
+                              maxWidth: '60%',
+                              textShadow: '0 2px 8px rgba(0,0,0,0.5)'
+                            }}
+                          >
                             {project.title}
                           </h3>
-                          <div style={{
-                            fontSize: '14px', color: 'rgba(255, 255, 255, 0.5)',
-                            fontWeight: '500', marginBottom: '12px'
-                          }}>
-                            {project.category}
-                          </div>
-                          <p style={{
-                            fontSize: '14px', lineHeight: '1.6',
-                            color: 'rgba(255, 255, 255, 0.7)', flex: 1
-                          }}>
-                            {project.description}
-                          </p>
 
-                          {/* View 3D Button */}
+                          {/* View 3D Button - Bottom Right */}
                           <button
                             onClick={() => setSelectedProject(project)}
                             style={{
-                              marginTop: '16px', padding: '12px 20px', borderRadius: '10px',
-                              fontSize: '14px', fontWeight: '600',
-                              background: `linear-gradient(135deg, ${project.color}, ${project.color}90)`,
-                              color: '#0a0e1a', border: 'none', cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              gap: '8px', transition: 'all 0.2s ease',
-                              boxShadow: `0 4px 12px ${project.color}40`
+                              position: 'absolute',
+                              bottom: '16px',
+                              right: '16px',
+                              padding: '12px 18px',
+                              borderRadius: '10px',
+                              fontSize: '14px',
+                              fontWeight: '600',
+                              background: 'rgba(0, 0, 0, 0.85)',
+                              backdropFilter: 'blur(12px)',
+                              color: project.color,
+                              border: `1px solid ${project.color}60`,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              transition: 'all 0.2s ease',
+                              boxShadow: `0 4px 16px ${project.color}30`
                             }}
                             className="view-3d-button"
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path d="M12 2L2 7L12 12L22 7L12 2Z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M2 17L12 22L22 17" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <path d="M2 12L12 17L22 12" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                             </svg>
-                            View in 3D
+                            View 3D
                           </button>
                         </div>
                       </div>
@@ -924,31 +947,19 @@ export default function CADGalleryNormalized() {
         }
 
         .cad-card:hover {
-          transform: translateY(-4px);
-          border-color: rgba(255, 255, 255, 0.15);
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+          transform: translateY(-6px);
+          border-color: rgba(255, 255, 255, 0.2);
+          box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
         }
 
         .view-3d-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
-          opacity: 0.9;
+          transform: scale(1.08);
+          background: rgba(0, 0, 0, 0.95) !important;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7) !important;
         }
 
         .view-3d-button:active {
-          transform: translateY(0);
-        }
-
-        button:not(:disabled):hover {
-          background: rgba(255, 255, 255, 0.15) !important;
-          transform: scale(1.1);
-        }
-
-        @media (max-width: 1200px) {
-          div[style*="grid-template-columns: repeat(2, 1fr)"] {
-            grid-template-columns: 1fr !important;
-            grid-template-rows: auto !important;
-          }
+          transform: scale(1);
         }
       `}</style>
     </>
