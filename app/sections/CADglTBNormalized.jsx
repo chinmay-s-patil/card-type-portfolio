@@ -135,7 +135,6 @@ function GLTFViewerModal({ project, onClose }) {
     const d2 = new THREE.DirectionalLight(0xffffff, 0.4)
     d2.position.set(-5, -5, -5)
     scene.add(d2)
-    scene.add(new THREE.GridHelper(10, 10, 0x444444, 0x222222))
 
     ctrlRef.current.target = new THREE.Vector3()
     ctrlRef.current.spherical = new THREE.Spherical(5, Math.PI / 3, Math.PI / 4)

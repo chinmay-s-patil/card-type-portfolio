@@ -28,6 +28,68 @@ const simulationsList = [
         ]
     },
     {
+        id: 11,
+        title: 'Drone Propeller Inflow',
+        category: 'Propulsion',
+        solver: 'pimpleFoam',
+        year: '2025',
+        date: '12/2025',
+        description: 'Unsteady simulation of drone propeller at 1200 RPM with downward ambient air velocity varying from 5 m/s to 30 m/s, simulating upward flight conditions and thrust response to inflow changes.',
+        specs: {
+            turbulence: 'LES (WALE)',
+            rpm: '1200',
+            inflow: '5-30 m/s'
+        },
+        tags: ['Propeller', 'Rotation', 'Drone', 'Inflow'],
+        media: [],
+        color: '#48cae4',
+        learnings: [
+            'Modeled propeller rotation with sliding mesh',
+            'Analyzed thrust variation with ambient inflow',
+            'Captured wake deformation under flight conditions'
+        ]
+    },
+    {
+        id: 12,
+        title: 'Container Filling AMR',
+        category: 'Multiphase Flow',
+        solver: 'interFoam',
+        year: '2025',
+        date: '11/2025',
+        description: 'Simulation of container filling dynamics with upper left/right halves as inlet/outlet, walls elsewhere, using Adaptive Mesh Refinement (AMR) at the water-air interface for sharp capture.',
+        specs: {
+            turbulence: 'LAMINAR'
+        },
+        tags: ['Filling', 'AMR', 'VOF', 'interFoam'],
+        media: [],
+        color: '#00a896',
+        learnings: [
+            'Implemented dynamic AMR at free surface',
+            'Stable inlet/outlet for continuous filling',
+            'Improved interface resolution efficiency'
+        ]
+    },
+    {
+        id: 13,
+        title: 'Pillar Separate (WIP)',
+        category: 'Multiphase Flow',
+        solver: 'interFoam',
+        year: '2025',
+        date: '12/2025',
+        description: 'Water flow under bridge with two obstructing support pillars to analyze surface ripple formation and flow separation around supports. Work in progress focusing on free-surface deflection.',
+        specs: {
+            turbulence: 'k-ω SST'
+        },
+        tags: ['Bridge', 'Pillars', 'Surface Waves', 'WIP'],
+        media: [],
+        color: '#0077b6',
+        learnings: [
+            'Captured flow around bridge supports',
+            'Analyzed surface water separation',
+            'Ongoing refinement of outlet conditions'
+        ]
+    },
+    {
         id: 10,
         title: 'BubbleSim',
         category: 'Multiphase Flow',

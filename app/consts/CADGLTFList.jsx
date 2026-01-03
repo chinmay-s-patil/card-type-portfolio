@@ -8,7 +8,7 @@ const CADGLTFList = [
     year: '2022',
     description: 'Detailed CAD model of an acoustic guitar featuring advanced surface modeling techniques, assembly design, and precise component integration. Showcases realistic detailing.',
     coverPhoto: '/Projects/Guitar Design Project/Guitar Design Project (1).jpg',
-    gltfFile: '/CAD/Guitar 2022/Guitar.gltf',
+    gltfFile: '/CAD/Guitar/Guitar.gltf',
     color: '#ff6b35',
     modelColor: '#8B4513',
     transparency: 0
@@ -35,7 +35,7 @@ const CADGLTFList = [
     coverPhoto: '/CAD/Burner Head/burner-perview.jpg',
     gltfFile: '/CAD/Burner Head/BurnerAssem.gltf',
     color: '#ff7b00',
-    modelColor: '#B87333',
+    modelColor: '#8efa45ff',
     modelRotation: { x: Math.PI / 2, y: 0, z: Math.PI / 2 },
     transparency: 0
   },
@@ -89,7 +89,7 @@ const CADGLTFList = [
     color: '#ffbe0b',
     modelColor: '#FFD700',
     modelRotation: { x: Math.PI / 2, y: 0, z: Math.PI / 2 },
-    transparency: 40
+    transparency: 10
   },
   {
     id: 8,
