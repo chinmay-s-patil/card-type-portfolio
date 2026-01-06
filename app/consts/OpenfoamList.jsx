@@ -1,6 +1,5 @@
 const simulationsList = [
     {
-        id: 1,
         title: 'Water Droplet Impact',
         category: 'Multiphase Flow',
         solver: 'interIsoFoam',
@@ -28,7 +27,6 @@ const simulationsList = [
         ]
     },
     {
-        id: 11,
         title: 'Drone Propeller Inflow',
         category: 'Propulsion',
         solver: 'pimpleFoam',
@@ -40,8 +38,14 @@ const simulationsList = [
             rpm: '1200',
             inflow: '5-30 m/s'
         },
+        media: [
+        { type: 'link', src: 'https://youtu.be/e1-Xk9poLTc' },
+        { type: 'link', src: 'https://youtu.be/ezZOBuvUGkg' },
+        { type: 'link', src: 'https://youtu.be/KF-tlR1s5Hs' },
+        { type: 'link', src: 'https://youtu.be/5oFPQE9LAmU' },
+        { type: 'link', src: 'https://youtu.be/1PUsm8FgfFE' },
+        ],
         tags: ['Propeller', 'Rotation', 'Drone', 'Inflow'],
-        media: [],
         color: '#48cae4',
         learnings: [
             'Modeled propeller rotation with sliding mesh',
@@ -50,27 +54,6 @@ const simulationsList = [
         ]
     },
     {
-        id: 12,
-        title: 'Container Filling AMR',
-        category: 'Multiphase Flow',
-        solver: 'interFoam',
-        year: '2025',
-        date: '11/2025',
-        description: 'Simulation of container filling dynamics with upper left/right halves as inlet/outlet, walls elsewhere, using Adaptive Mesh Refinement (AMR) at the water-air interface for sharp capture.',
-        specs: {
-            turbulence: 'LAMINAR'
-        },
-        tags: ['Filling', 'AMR', 'VOF', 'interFoam'],
-        media: [],
-        color: '#00a896',
-        learnings: [
-            'Implemented dynamic AMR at free surface',
-            'Stable inlet/outlet for continuous filling',
-            'Improved interface resolution efficiency'
-        ]
-    },
-    {
-        id: 13,
         title: 'Pillar Separate (WIP)',
         category: 'Multiphase Flow',
         solver: 'interFoam',
@@ -90,7 +73,6 @@ const simulationsList = [
         ]
     },
     {
-        id: 10,
         title: 'BubbleSim',
         category: 'Multiphase Flow',
         solver: 'interIsoFoam',
@@ -102,7 +84,7 @@ const simulationsList = [
         },
         tags: ['VOF', 'Multiphase', 'Interface Tracking'],
         media: [
-        { type: 'video', src: '/OpenFoam/BubbleSim/BubbleSim.mp4' },
+        { type: 'link', src: 'https://youtu.be/b21aS5imCRQ' },
         ],
         color: '#00c4b3',
         learnings: [
@@ -112,7 +94,6 @@ const simulationsList = [
         ]
     },
     {
-        id: 2,
         title: 'F1 Aerodynamics',
         category: 'Vehicle Aerodynamics',
         solver: 'pimpleFoam',
@@ -134,30 +115,31 @@ const simulationsList = [
         ]
     },
     {
-        id: 3,
-        title: 'FSAE Car Simulation',
-        category: 'Vehicle Aerodynamics',
-        solver: 'pimpleFoam',
-        year: '2024',
-        date: '12/2024',
-        description: 'Flow simulation of a Formula SAE racecar to optimize aerodynamic balance and drag-to-lift ratio using transient PIMPLE coupling.',
+        title: 'Container Filling AMR',
+        category: 'Multiphase Flow',
+        solver: 'interFoam',
+        year: '2025',
+        date: '11/2025',
+        description: 'Simulation of container filling dynamics with upper left/right halves as inlet/outlet, walls elsewhere, using Adaptive Mesh Refinement (AMR) at the water-air interface for sharp capture.',
         specs: {
-        turbulence: 'k-ω SST',
+            turbulence: 'LAMINAR'
         },
-        tags: ['FSAE', 'Transient', 'Vehicle'],
+        tags: ['Filling', 'AMR', 'VOF', 'interFoam'],
         media: [
-        { type: 'link', src: 'https://youtu.be/iIikI_LeR7M' },
-        { type: 'link', src: 'https://youtu.be/rgmIqWjOfpo' },
+            { type: 'link', src: 'https://youtu.be/Okgu05sbi6w' },
+            { type: 'link', src: 'https://youtu.be/-3tyRwD62bA' },
+            { type: 'link', src: 'https://youtu.be/aqfHIQPvozU' },
+            { type: 'link', src: 'https://youtu.be/JgCLHwVjAKc' },
+            { type: 'link', src: 'https://youtu.be/RsR7A1tjaMI' },
         ],
-        color: '#00b4d8',
+        color: '#00a896',
         learnings: [
-        'Optimized aerodynamic balance',
-        'Analyzed transient flow effects',
-        'Improved drag-to-lift ratio'
+            'Implemented dynamic AMR at free surface',
+            'Stable inlet/outlet for continuous filling',
+            'Improved interface resolution efficiency'
         ]
     },
     {
-        id: 4,
         title: 'Propeller Simulation',
         category: 'Aeroacoustics',
         solver: 'pimpleFoam',
@@ -179,7 +161,6 @@ const simulationsList = [
         ]
     },
     {
-        id: 5,
         title: 'Engine Combustion',
         category: 'Combustion',
         solver: 'reactingFoam',
@@ -202,7 +183,6 @@ const simulationsList = [
         ]
     },
     {
-        id: 6,
         title: 'Solar Panel Wind Load',
         category: 'Wind Engineering',
         solver: 'simpleFoam',
@@ -214,7 +194,8 @@ const simulationsList = [
         },
         tags: ['Wind Load', 'ABL', 'Transient'],
         media: [
-        { type: 'video', src: '/OpenFoam/SolarPanel/SolarPanelBig (2).mp4' },
+        { type: 'link', src: 'https://youtu.be/4Jfo9_4OumM' },
+        { type: 'link', src: 'https://youtu.be/vk0DZnuVfNo' },
         ],
         color: '#90e0ef',
         learnings: [
@@ -244,6 +225,28 @@ const simulationsList = [
         'Implemented MRF for impeller rotation',
         'Simulated gas–liquid flow behavior',
         'Analyzed mixing uniformity and turbulence characteristics'
+        ]
+    },
+    {
+        title: 'FSAE Car Simulation',
+        category: 'Vehicle Aerodynamics',
+        solver: 'pimpleFoam',
+        year: '2024',
+        date: '12/2024',
+        description: 'Flow simulation of a Formula SAE racecar to optimize aerodynamic balance and drag-to-lift ratio using transient PIMPLE coupling.',
+        specs: {
+        turbulence: 'k-ω SST',
+        },
+        tags: ['FSAE', 'Transient', 'Vehicle'],
+        media: [
+        { type: 'link', src: 'https://youtu.be/iIikI_LeR7M' },
+        { type: 'link', src: 'https://youtu.be/rgmIqWjOfpo' },
+        ],
+        color: '#00b4d8',
+        learnings: [
+        'Optimized aerodynamic balance',
+        'Analyzed transient flow effects',
+        'Improved drag-to-lift ratio'
         ]
     },
     {
