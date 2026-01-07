@@ -10,6 +10,7 @@ import EventsNormalized from './sections/EventsNormalized'
 import Footer from './components/Footer'
 import MobileWarning from './components/MobileWarning'
 import CADNormalized from './sections/CADglTBNormalized'
+import VisualizationNormalized from './sections/VisualizationNormalized'
 
 
 const sectionsMeta = [
@@ -20,6 +21,7 @@ const sectionsMeta = [
   { id: 'projects', label: 'Projects' },
   { id: 'openfoam', label: 'OpenFOAM' },
   { id: 'cad', label: 'CAD' },
+  { id: 'visualization', label: 'Visualization' },
   { id: 'events', label: 'Events' },
 ]
 
@@ -57,6 +59,10 @@ export default function Page() {
 
         <section id="cad" className="section">
           <CADNormalized />
+        </section>
+
+        <section id="visualization" className="section">
+          <VisualizationNormalized />
         </section>
         
         <section id="events" className="section">

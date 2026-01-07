@@ -1,5 +1,6 @@
 const simulationsList = [
     {
+        id: 1,
         title: 'Water Droplet Impact',
         category: 'Multiphase Flow',
         solver: 'interIsoFoam',
@@ -27,6 +28,7 @@ const simulationsList = [
         ]
     },
     {
+        id: 2,
         title: 'Drone Propeller Inflow',
         category: 'Propulsion',
         solver: 'pimpleFoam',
@@ -54,6 +56,7 @@ const simulationsList = [
         ]
     },
     {
+        id: 3,
         title: 'Pillar Separate (WIP)',
         category: 'Multiphase Flow',
         solver: 'interFoam',
@@ -73,6 +76,7 @@ const simulationsList = [
         ]
     },
     {
+        id: 4,
         title: 'BubbleSim',
         category: 'Multiphase Flow',
         solver: 'interIsoFoam',
@@ -94,6 +98,7 @@ const simulationsList = [
         ]
     },
     {
+        id: 5,
         title: 'F1 Aerodynamics',
         category: 'Vehicle Aerodynamics',
         solver: 'pimpleFoam',
@@ -115,6 +120,7 @@ const simulationsList = [
         ]
     },
     {
+        id: 6,
         title: 'Container Filling AMR',
         category: 'Multiphase Flow',
         solver: 'interFoam',
@@ -140,6 +146,7 @@ const simulationsList = [
         ]
     },
     {
+        id: 7,
         title: 'Propeller Simulation',
         category: 'Aeroacoustics',
         solver: 'pimpleFoam',
@@ -161,6 +168,7 @@ const simulationsList = [
         ]
     },
     {
+        id: 8,
         title: 'Engine Combustion',
         category: 'Combustion',
         solver: 'reactingFoam',
@@ -183,6 +191,7 @@ const simulationsList = [
         ]
     },
     {
+        id: 9,
         title: 'Solar Panel Wind Load',
         category: 'Wind Engineering',
         solver: 'simpleFoam',
@@ -205,7 +214,7 @@ const simulationsList = [
         ]
     },
     {
-        id: 7,
+        id: 10,
         title: 'Stirred Tank Mixing',
         category: 'Multiphase Flow',
         solver: 'twoPhaseEulerFoam',
@@ -228,6 +237,7 @@ const simulationsList = [
         ]
     },
     {
+        id: 11,
         title: 'FSAE Car Simulation',
         category: 'Vehicle Aerodynamics',
         solver: 'pimpleFoam',
@@ -250,7 +260,7 @@ const simulationsList = [
         ]
     },
     {
-        id: 8,
+        id: 12,
         title: 'Supersonic Airfoil',
         category: 'High-Speed Flow',
         solver: 'sonicFoam',
@@ -276,7 +286,7 @@ const simulationsList = [
         ]
     },
     {
-        id: 9,
+        id: 13,
         title: 'Supersonic Prism',
         category: 'High-Speed Flow',
         solver: 'sonicFoam',
