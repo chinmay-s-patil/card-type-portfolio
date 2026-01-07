@@ -8,7 +8,6 @@ const simulationsList = [
         date: '05/2025',
         description: 'High-resolution simulation of a droplet impact event on a water surface capturing crown formation and secondary breakup dynamics.',
         specs: {
-        cells: '~1.5M',
         turbulence: 'LES',
         runtime: '20 hours',
         cores: '8'
@@ -222,7 +221,6 @@ const simulationsList = [
         date: '02/2024',
         description: 'Multiphase mixing simulation in a stirred tank using the MRF approach to model impeller rotation. Captured gas–liquid interaction and evaluated mixing efficiency and flow patterns.',
         specs: {
-        cells: '~2M',
         turbulence: 'mixture k-ε',
         },
         tags: ['Mixing', 'MRF', 'Gas-Liquid'],
@@ -268,7 +266,6 @@ const simulationsList = [
         date: '06/2025',
         description: 'Supersonic flow simulation over a wedge-type airfoil capturing shock formation, expansion fans, and pressure distribution at Mach 2.0.',
         specs: {
-        cells: '~2.8M',
         turbulence: 'Spalart–Allmaras',
         runtime: '30 hours',
         cores: '8'
@@ -294,7 +291,6 @@ const simulationsList = [
         date: '06/2025',
         description: 'Compressible flow past a sharp-edged prism generating oblique shock structures and expansion fans, analyzed for Mach 3 freestream.',
         specs: {
-        cells: '~3.5M',
         turbulence: 'Spalart–Allmaras',
         runtime: '40 hours',
         cores: '8'

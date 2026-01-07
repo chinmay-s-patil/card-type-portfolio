@@ -415,54 +415,31 @@ export default function OpenFOAMNormalized() {
                               {sim.description}
                             </p>
 
-                            {/* Mini Specs Grid */}
+                            {/* Turbulence Model Badge - Single Display */}
                             <div style={{
-                              display: 'grid',
-                              gridTemplateColumns: '1fr 1fr',
-                              gap: '8px',
                               marginBottom: '16px',
                               padding: '12px',
                               background: 'rgba(0, 0, 0, 0.3)',
                               borderRadius: '8px',
-                              border: '1px solid rgba(255, 255, 255, 0.05)'
+                              border: '1px solid rgba(255, 255, 255, 0.05)',
+                              textAlign: 'center'
                             }}>
-                              <div>
-                                <div style={{
-                                  fontSize: '10px',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.05em',
-                                  color: 'rgba(255, 255, 255, 0.5)',
-                                  marginBottom: '4px'
-                                }}>
-                                  Mesh
-                                </div>
-                                <div style={{
-                                  fontSize: '12px',
-                                  fontWeight: '600',
-                                  color: sim.color,
-                                  fontFamily: 'monospace'
-                                }}>
-                                  {sim.specs.cells || 'N/A'}
-                                </div>
+                              <div style={{
+                                fontSize: '10px',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                color: 'rgba(255, 255, 255, 0.5)',
+                                marginBottom: '6px'
+                              }}>
+                                Turbulence Model
                               </div>
-                              <div>
-                                <div style={{
-                                  fontSize: '10px',
-                                  textTransform: 'uppercase',
-                                  letterSpacing: '0.05em',
-                                  color: 'rgba(255, 255, 255, 0.5)',
-                                  marginBottom: '4px'
-                                }}>
-                                  Model
-                                </div>
-                                <div style={{
-                                  fontSize: '12px',
-                                  fontWeight: '600',
-                                  color: sim.color,
-                                  fontFamily: 'monospace'
-                                }}>
-                                  {sim.specs.turbulence}
-                                </div>
+                              <div style={{
+                                fontSize: '14px',
+                                fontWeight: '700',
+                                color: sim.color,
+                                fontFamily: 'monospace'
+                              }}>
+                                {sim.specs.turbulence}
                               </div>
                             </div>
 
