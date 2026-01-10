@@ -1,12 +1,11 @@
 {
-  "buildCommand": "npm install && npm install tailwindcss postcss autoprefixer --save-dev && NODE_OPTIONS='--max-old-space-size=3584' next build",
   "framework": "nextjs",
   "regions": ["iad1"],
   "build": {
     "env": {
       "NEXT_TELEMETRY_DISABLED": "1",
       "NODE_ENV": "production",
-      "SKIP_ENV_VALIDATION": "1"
+      "NODE_OPTIONS": "--max-old-space-size=3584"
     }
   },
   "functions": {
