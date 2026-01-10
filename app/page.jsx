@@ -1,17 +1,44 @@
+import dynamic from 'next/dynamic'
 import NavDots from './components/NavDots'
 import HeaderNormalized from './components/HeaderNormalized'
-import LandingNormalized from './sections/LandingNormalized'
-import EducationNormalized from './sections/EducationNormalized'
-import ExperienceNormalized from './sections/ExperienceNormalized'
-import SkillsNormalized from './sections/SkillsNormalized'
-import ProjectsNormalized from './sections/ProjectsNormalized'
-import OpenFOAMNormalized from './sections/OpenFOAMNormalized'
-import EventsNormalized from './sections/EventsNormalized'
 import Footer from './components/Footer'
-import MobileWarning from './components/MobileWarning'
-import CADNormalized from './sections/CADglTBNormalized'
-import VisualizationNormalized from './sections/VisualizationNormalized'
 
+// Lazy load heavy sections to reduce initial bundle size
+const LandingNormalized = dynamic(() => import('./sections/LandingNormalized'), {
+  loading: () => null,
+})
+
+const EducationNormalized = dynamic(() => import('./sections/EducationNormalized'), {
+  loading: () => null,
+})
+
+const ExperienceNormalized = dynamic(() => import('./sections/ExperienceNormalized'), {
+  loading: () => null,
+})
+
+const SkillsNormalized = dynamic(() => import('./sections/SkillsNormalized'), {
+  loading: () => null,
+})
+
+const ProjectsNormalized = dynamic(() => import('./sections/ProjectsNormalized'), {
+  loading: () => null,
+})
+
+const OpenFOAMNormalized = dynamic(() => import('./sections/OpenFOAMNormalized'), {
+  loading: () => null,
+})
+
+const CADNormalized = dynamic(() => import('./sections/CADglTBNormalized'), {
+  loading: () => null,
+})
+
+const VisualizationNormalized = dynamic(() => import('./sections/VisualizationNormalized'), {
+  loading: () => null,
+})
+
+const EventsNormalized = dynamic(() => import('./sections/EventsNormalized'), {
+  loading: () => null,
+})
 
 const sectionsMeta = [
   { id: 'landing', label: 'Landing' },
@@ -28,7 +55,6 @@ const sectionsMeta = [
 export default function Page() {
   return (
     <>
-      {/* <MobileWarning /> */}
       <HeaderNormalized />
       <NavDots sections={sectionsMeta} />
       
@@ -69,7 +95,6 @@ export default function Page() {
           <EventsNormalized />
         </section>
         
-        {/* Footer as final scroll section (no dot) */}
         <section id="contact" className="section" style={{ minHeight: 'auto', height: 'auto', padding: 0 }}>
           <Footer />
         </section>

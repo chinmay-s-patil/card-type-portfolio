@@ -9,8 +9,6 @@ const simulationsList = [
         description: 'High-resolution simulation of a droplet impact event on a water surface capturing crown formation and secondary breakup dynamics.',
         specs: {
         turbulence: 'LES',
-        runtime: '20 hours',
-        cores: '8'
         },
         tags: ['Impact', 'VOF', 'Splash'],
         media: [
@@ -147,7 +145,7 @@ const simulationsList = [
     {
         id: 7,
         title: 'Propeller Simulation',
-        category: 'Aeroacoustics',
+        category: 'Drone Simulation',
         solver: 'pimpleFoam',
         year: '2024',
         date: '06/2024',
@@ -267,8 +265,6 @@ const simulationsList = [
         description: 'Supersonic flow simulation over a wedge-type airfoil capturing shock formation, expansion fans, and pressure distribution at Mach 2.0.',
         specs: {
         turbulence: 'Spalart–Allmaras',
-        runtime: '30 hours',
-        cores: '8'
         },
         tags: ['Compressible', 'Shock', 'Supersonic'],
         media: [
@@ -292,8 +288,6 @@ const simulationsList = [
         description: 'Compressible flow past a sharp-edged prism generating oblique shock structures and expansion fans, analyzed for Mach 3 freestream.',
         specs: {
         turbulence: 'Spalart–Allmaras',
-        runtime: '40 hours',
-        cores: '8'
         },
         tags: ['Mach Flow', 'Shock Wave', 'Compressible'],
         media: [

@@ -2,28 +2,32 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Reduce memory usage during build
-  experimental: {
-    // Reduce worker threads
-    workerThreads: false,
-    cpus: 1
-  },
-  
-  // Disable image optimization during build (images are already optimized)
+  // CRITICAL: Disable memory-intensive features
   images: {
-    unoptimized: true
+    unoptimized: true, // Skip image optimization entirely
   },
   
-  // Reduce bundle size
+  // Reduce build output size
   output: 'standalone',
   
+  // Disable source maps in production to save memory
+  productionBrowserSourceMaps: false,
+  
   // Optimize webpack for memory
-  webpack: (config, { isServer }) => {
+  webpack: (config, { dev, isServer }) => {
+    // Disable source maps completely during build
+    if (!dev) {
+      config.devtool = false;
+    }
+    
     // Reduce memory usage
     config.optimization = {
       ...config.optimization,
-      minimize: true,
-      // Split chunks to reduce memory usage
+      // Disable minimization during build to save memory
+      // Note: This will increase bundle size but prevent OOM
+      minimize: false,
+      
+      // Aggressive chunk splitting
       splitChunks: {
         chunks: 'all',
         cacheGroups: {
@@ -47,26 +51,46 @@ const nextConfig = {
           }
         }
       }
-    }
+    };
     
-    // Reduce parallelism to save memory
+    // Disable parallelism to reduce memory
+    config.parallelism = 1;
+    
+    // Reduce terser parallelism
     if (!isServer) {
-      config.optimization.minimizer = config.optimization.minimizer.map(plugin => {
-        if (plugin.constructor.name === 'TerserPlugin') {
-          return {
-            ...plugin,
-            options: {
-              ...plugin.options,
-              parallel: false, // Disable parallel processing to save memory
-            }
-          }
-        }
-        return plugin
-      })
+      const TerserPlugin = config.optimization.minimizer?.find(
+        plugin => plugin.constructor.name === 'TerserPlugin'
+      );
+      if (TerserPlugin) {
+        TerserPlugin.options.parallel = false;
+      }
     }
     
-    return config
-  }
+    // Limit memory usage
+    config.performance = {
+      ...config.performance,
+      maxAssetSize: 10000000, // 10MB
+      maxEntrypointSize: 10000000,
+    };
+    
+    return config;
+  },
+  
+  // Experimental optimizations
+  experimental: {
+    // Disable worker threads
+    workerThreads: false,
+    cpus: 1,
+  },
+  
+  // Compiler optimizations
+  compiler: {
+    // Remove console logs in production
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
+  
+  // Reduce page data size
+  compress: true,
 }
 
 module.exports = nextConfig
