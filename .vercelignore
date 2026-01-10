@@ -3,20 +3,3 @@
 .vscode
 *.md
 README.md
-
-# Cache directories
-.next/cache
-node_modules/.cache
-
-# Test files
-**/*.test.js
-**/*.test.jsx
-**/*.spec.js
-**/*.spec.jsx
-
-# Documentation
-docs/
-documentation/
-
-# Source maps (reduce bundle size)
-**/*.map
