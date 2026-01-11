@@ -301,13 +301,15 @@ export default function ProjectsNormalized() {
             style={{
               flex: 1,
               overflowX: 'auto',
-              overflowY: 'hidden',
+              overflowY: 'visible', // Changed from 'hidden' to allow hover expansion
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
               scrollSnapType: 'x mandatory',
               display: 'flex',
               WebkitOverflowScrolling: 'touch',
-              minHeight: 0
+              minHeight: 0,
+              paddingTop: '12px', // Add padding to prevent clipping on hover
+              paddingBottom: '12px'
             }}
           >
             {Array.from({ length: totalPages }).map((_, pageIndex) => (

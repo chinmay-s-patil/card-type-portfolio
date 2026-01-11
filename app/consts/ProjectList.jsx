@@ -10,7 +10,7 @@ const projectsList = [
         'Built ML models with 95.96% R² accuracy',
         'Analyzed materials with TGA, SEM-EDAX, GC-MS'
         ],
-        tags: ['Alternative Fuels', 'Machine Learning', 'Thermal', 'Experimental Design'],
+        tags: ['Alternative Fuels', 'ML', 'Experimental Design'],
         media: [
         { type: 'image', src: '/Projects/Pyrolysis of Plastics/Pyrolysis of Plastics (1).jpg'},
         { type: 'image', src: '/Projects/Pyrolysis of Plastics/Pyrolysis of Plastics (2).jpg'},
