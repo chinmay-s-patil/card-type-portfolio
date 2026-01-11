@@ -31,9 +31,9 @@ const experienceList = [
       skills: ['OpenFOAM', 'LES', 'Aeroacoustics', 'ANSYS Fluent'],
       color: 'hsl(160, 65%, 55%)',
       images: [
-        '/Experience/IISc/Slideshow/IISc1.jpg',
-        '/Experience/IISc/Slideshow/IISc2.jpg',
-        '/Experience/IISc/Slideshow/IISc3.jpeg',
+        '/Experience/IISc/Slideshow/IISc (1).jpg',
+        '/Experience/IISc/Slideshow/IISc (2).jpg',
+        '/Experience/IISc/Slideshow/IISc (3).jpg',
       ],
       documents: { 
         offerLetter: "/Experience/IISc/IISc Offer Letter.jpg", 

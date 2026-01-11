@@ -26,13 +26,13 @@ export default function EducationNormalized() {
   }, [])
 
   const mastersImages = [
-    '/Education/TUM/TUM (1).jpeg',
     '/Education/TUM/TUM (1).jpg',
-    '/Education/TUM/TUM (2).jpeg',
     '/Education/TUM/TUM (2).jpg',
-    '/Education/TUM/TUM (3).jpeg',
-    '/Education/TUM/TUM (4).jpeg',
-    '/Education/TUM/TUM (5).jpeg',
+    '/Education/TUM/TUM (3).jpg',
+    '/Education/TUM/TUM (4).jpg',
+    '/Education/TUM/TUM (5).jpg',
+    '/Education/TUM/TUM (6).jpg',
+    '/Education/TUM/TUM (7).jpg',
   ]
 
   const bachelorsImages = [
